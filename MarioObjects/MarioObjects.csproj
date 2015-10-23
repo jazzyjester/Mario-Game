@@ -181,6 +181,7 @@
     <EmbeddedResource Include="Images\Backgrounds\Frame.png" />
     <Content Include="MarioIcon.ico" />
     <EmbeddedResource Include="Sounds\level2.mp3" />
+    <Content Include="XML\lev1.xml" />
     <Content Include="XML\Level1.xml" />
     <EmbeddedResource Include="Sounds\block.wav" />
     <EmbeddedResource Include="Sounds\fireball.wav" />
