@@ -1,5 +1,8 @@
 # Mario Objects
 
+![](https://github.com/jazzyjester/Mario-Objects/blob/master/mario1.png)
+![](https://github.com/jazzyjester/Mario-Objects/blob/master/mario2.png)
+
 ##Introduction
 Mario Objects is a Mario game  + level editor created by me when I was at collage.
 This was my first project I made in c# to learn the language.
@@ -21,5 +24,17 @@ The solution created in Visual Studio 2010 and contains 4 projects
 - **Mario Rectangle** - Simple tests project.
 - **Mario Test** - Simple Unit test project.
 
+## Level Editor
+
+The level editor creates XML file that later will be loaded to the game and create all the objects for the game.
+All the objects that are available are on the left panel.
+Click on the same object will bring the properties screen if available.
+I know the UX is very bad, but thats what I thought on that time.
+
+![](https://github.com/jazzyjester/Mario-Objects/blob/master/mario3.png)
+
+
 ## Contact
 Write to me if you like the game  : jazzyjester@gmail.com
+
+
