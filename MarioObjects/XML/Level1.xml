@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<root>
+  <Object>
+    <OName>BlockSolid</OName>
+    <X>5</X>
+    <Y>5</Y>
+    <Int1>0</Int1>
+    <Int2>0</Int2>
+    <Int3>0</Int3>
+    <Bool1>false</Bool1>
+    <Bool2>false</Bool2>
+    <Bool3>false</Bool3>
+  </Object>
+  
+  <Object>
+  <OName>CoinBlock</OName>
+  <X>6</X>
+  <Y>6</Y>
+  <Int1>0</Int1>
+  <Int2>0</Int2>
+  <Int3>0</Int3>
+  <Bool1>true</Bool1>
+  <Bool2>false</Bool2>
+  <Bool3>false</Bool3>
+  </Object>
+
+
+</root> 

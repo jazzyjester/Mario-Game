@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="root">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" name="Object">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="OName" type="xs:string" />
+              <xs:element name="X" type="xs:int" />
+              <xs:element name="Y" type="xs:int" />
+              <xs:element name="Int1" type="xs:int" />
+              <xs:element name="Int2" type="xs:int" />
+              <xs:element name="Int3" type="xs:int" />
+              <xs:element name="Bool1" type="xs:boolean" />
+              <xs:element name="Bool2" type="xs:boolean" />
+              <xs:element name="Bool3" type="xs:boolean" />
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
