@@ -1,13 +1,11 @@
 Backup/*
 */Debug/*
 MarioObjects/obj/Debug/*
-MarioObjects/bin/*
 MarioTests/bin/*
 MarioObjects/obj/*
 MarioRectangle/obj/*
 MarioTests/obj/*
 MarioLevelEditor/obj/*
-MarioLevelEditor/bin/*
 MarioRectangle/bin/*
 _UpgradeReport_Files/*
 UpgradeLog.XML
