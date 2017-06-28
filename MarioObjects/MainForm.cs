@@ -243,7 +243,7 @@ namespace MarioObjects
 
             TimeSpan Diff = TimeClose.Subtract(MyTime);
 
-            this.Text = Diff.ToString();
+            this.Text = string.Format("{0:00}:{1:00}:{2:00}", Diff.Hours, Diff.Minutes, Diff.Seconds);
 
         }
 

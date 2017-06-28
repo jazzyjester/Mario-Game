@@ -9,3 +9,7 @@ MarioLevelEditor/obj/*
 MarioRectangle/bin/*
 _UpgradeReport_Files/*
 UpgradeLog.XML
+/MarioObjects/bin/Debug/MarioObjects.exe
+/MarioObjects/bin/Debug/MarioObjects.pdb
+/MarioObjects/bin/Debug/MarioObjects.vshost.exe
+/MarioObjects/bin/Debug/MarioObjects.vshost.exe.manifest
