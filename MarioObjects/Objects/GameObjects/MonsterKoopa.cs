@@ -117,8 +117,27 @@ namespace MarioObjects.Objects.GameObjects
                             SetKoopaState(KoopaState.KS_ShieldMoving);
                         }
 
+                        // Size-down mario when colliding with a koopa
+                        if (State != KoopaState.KS_Shield) // but not in shield state
+                        {
+                          if (!(State == KoopaState.KS_ShieldMoving // Or that he's just set in motion
+                              && (DirX == -1 && c.Dir == CollisionDirection.CD_Left) || (DirX == 1 && c.Dir == CollisionDirection.CD_Right)))
+                          {
+                            Mario m = (Mario)g;
+                            if (c.Dir != CollisionDirection.CD_Down)
+                            {
+                              if (!m.Blinking)
+                                if (m.Type == Mario.MarioType.MT_Big || m.Type == Mario.MarioType.MT_Fire)
+                                {
+                                  m.Type = Mario.MarioType.MT_Small;
+                                  m.StartBlinking();
+                                  m.SetMarioProperties();
+                                }
+                            }
+                          }
                     } break;
             }
+          } 
         }
         public override void OnAnimate(object sender, EventArgs e)
         {

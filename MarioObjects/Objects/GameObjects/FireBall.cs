@@ -68,17 +68,31 @@ namespace MarioObjects.Objects.GameObjects
                     } break;
                 case ObjectType.OT_Pirana:
                     {
-                        if (Type == FireBallType.FT_Mario)
+                        if (Type == FireBallType.FT_Mario
+                            && ((MonsterPiranah)g).Move != MonsterPiranah.PiranaMove.PM_None) // Only kill pirana if it's out of its pipe
                         {
                             ((MonsterPiranah)g).Visible = false;
                             ((MonsterPiranah)g).Live = false;
-
                         }
-
+                    } break;
+                // Handle fireball hitting Mario
+                case ObjectType.OT_Mario:
+                    {
+                      if (Type != FireBallType.FT_Mario) // Make sure it isn't Mario's fireball
+                      {
+                        Mario m = (Mario)g;
+                        if (!m.Blinking)
+                          if (m.Type == Mario.MarioType.MT_Big || m.Type == Mario.MarioType.MT_Fire)
+                          {
+                            m.Type = Mario.MarioType.MT_Small;
+                            m.StartBlinking();
+                            m.SetMarioProperties();
+                          }
+                      }
                     } break;
             }
 
-        }
+        } 
 
         public void RunFireBall(int x, int y, FireBallType T, FireBallDir D)
         {
