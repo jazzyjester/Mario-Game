@@ -20,7 +20,32 @@ namespace MarioObjects.Objects.GameObjects
         public FireBall Ball;
         public Boolean FireOnce = false;
 
-        public void SetDirection()
+    public override void Intersection(Collision c, GraphicObject g)
+    {
+      base.Intersection(c, g);
+
+      switch (g.OT)
+      {
+        case ObjectType.OT_Mario:
+          {
+            // Handle collision with Mario
+            if (Move != PiranaMove.PM_None) // Only if the pirana is out of its pipe
+            {
+              Mario m = (Mario)g;
+              if (!m.Blinking)
+                if (m.Type == Mario.MarioType.MT_Big || m.Type == Mario.MarioType.MT_Fire)
+                {
+                  m.Type = Mario.MarioType.MT_Small;
+                  m.StartBlinking();
+                  m.SetMarioProperties();
+                }
+            }
+          }
+          break;
+      }
+    }
+
+    public void SetDirection()
         {
             if (newx >= LevelGenerator.CurrentLevel.MarioObject.x)
                 Direction = PiranahDirection.PD_Left;
