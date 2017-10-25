@@ -93,11 +93,9 @@ namespace Helper
                         edt_Log.Text = edt_Log.Text.Remove(0, Math.Min(edt_Log.TextLength, 1024));
                     }
 
-              if (using_text_box)
-                    {
-                        edt_Log.AppendText(msg);
-                        SendMessage(edt_Log.Handle, WM_VSCROLL, SB_BOTTOM, 0);
-                    }
+                    edt_Log.AppendText(msg);
+                    SendMessage(edt_Log.Handle, WM_VSCROLL, SB_BOTTOM, 0);
+                    
                 }
 		}
 
