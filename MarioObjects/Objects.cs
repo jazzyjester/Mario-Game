@@ -52,6 +52,11 @@ namespace MarioObjects
            Instance.Events[Type].Add(Event);
         }
 
+        public static void RemoveAllTimerEvents()
+        {
+            Instance.Events.Clear();
+        }
+
         public Boolean EventInRange(EventHandler myevent)
         {
             Rectangle ARec = LevelGenerator.CurrentLevel.GetAvailableObjectRec();

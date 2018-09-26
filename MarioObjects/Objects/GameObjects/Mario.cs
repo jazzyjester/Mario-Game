@@ -19,7 +19,7 @@ namespace MarioObjects.Objects.GameObjects
         public MarioType Type;
         public MarioJumpState State;
         public MarioMoveState MoveState;
-        public Boolean ControlPressed;
+        public Boolean EnterPressed;
         public Boolean Blinking;
         public Boolean BlinkingShow;
         public int BlinkValue;
@@ -48,6 +48,10 @@ namespace MarioObjects.Objects.GameObjects
         {
             return new Mario(le.x, le.y);
         }
+
+
+        public delegate void LevelCompletedDelegate();
+        public event LevelCompletedDelegate OnLevelCompleted;
 
 
         public void OnCheckCollisions(Object sender, EventArgs e)
@@ -135,9 +139,10 @@ namespace MarioObjects.Objects.GameObjects
             {
                 case ObjectType.OT_Exit:
                     {
-                        if (UpPressed)
+                        if (EnterPressed)
                         {
-                            UpPressed = false;
+                            EnterPressed = false;
+                            OnLevelCompleted?.Invoke();
                             System.Windows.Forms.MessageBox.Show("Very Good !");
 
                         }
@@ -179,10 +184,10 @@ namespace MarioObjects.Objects.GameObjects
                     {
                         if (c.Dir == CollisionDirection.CD_Up)
                         {
-                            // Jump On Goomba with Control Presses
+                            // Jump On Goomba with Up Presses
                             if (((MonsterGoomba)g).FallDie == false)
                             {
-                                if (ControlPressed)
+                                if (UpPressed)
                                     StartJump(true, 0);
                                 else
                                     StartJump(true, -20);
@@ -198,10 +203,10 @@ namespace MarioObjects.Objects.GameObjects
                     {
                         if (c.Dir == CollisionDirection.CD_Up)
                         {
-                            // Jump On Koopa with Control Presses
+                            // Jump On Koopa with Up Presses
                             if (((MonsterKoopa)g).State == MonsterKoopa.KoopaState.KS_Walking)
                             {
-                                if (ControlPressed)
+                                if (UpPressed)
                                     StartJump(true, 0);
                                 else
                                     StartJump(true, -20);
@@ -218,7 +223,7 @@ namespace MarioObjects.Objects.GameObjects
                                 }
                                 else if (((MonsterKoopa)g).State == MonsterKoopa.KoopaState.KS_ShieldMoving)
                                 {
-                                    if (ControlPressed)
+                                    if (UpPressed)
                                         StartJump(true, 0);
                                     else
                                         StartJump(true, -20);
@@ -433,7 +438,7 @@ namespace MarioObjects.Objects.GameObjects
 
         public void StopJump()
         {
-            ControlPressed = false;
+            UpPressed = false;
             if (State != MarioJumpState.J_None)
             {
                 State = MarioJumpState.JDown;
@@ -446,7 +451,7 @@ namespace MarioObjects.Objects.GameObjects
         public void StartJump(Boolean Kill, double DefeaultVelocity)
         {
             if (Kill == false)
-                ControlPressed = true;
+                UpPressed = true;
 
             if (State == MarioJumpState.J_None || Kill == true)
             {
@@ -540,7 +545,7 @@ namespace MarioObjects.Objects.GameObjects
                 MoveState = MarioMoveState.J_Stopping;
 
                 //bug walls
-                if (!ControlPressed)
+                if (!UpPressed)
                 {
                     XCount = 5;
                     XAdd = 0;
@@ -666,7 +671,7 @@ namespace MarioObjects.Objects.GameObjects
             this.x = x * 16;
             this.y = LevelGenerator.LevelHeight - 16 * y - height;
             Visible = true;
-            ControlPressed = false;
+            UpPressed = false;
             Blinking = false;
             BlinkingShow = true;
 

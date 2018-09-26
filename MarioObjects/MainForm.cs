@@ -85,7 +85,7 @@ namespace MarioObjects
             Width = 320;
             Height = 240  + 25;
 
-            Cursor.Hide();
+            //Cursor.Hide();
 
 
             //pBack.Left = 0;
@@ -111,15 +111,6 @@ namespace MarioObjects
         }
         private void MainForm_Load(object sender, EventArgs e)
         {
-            MyTime = DateTime.Now;
-
-            SRC = new Rectangle(0, 0, 320, 240);
-            DEST = new Rectangle(0, 0, 320, 240);
-
-            Init_Properties();
-
-            lev = new Level();
-
             Load_Level_XML();
 
 
@@ -258,7 +249,7 @@ namespace MarioObjects
             KeyLeft = state == -32767;
 
 
-            if ((e.Modifiers & Keys.Control) == Keys.Control)
+            if (e.KeyValue == (int)Keys.Up)
                 lev.MarioObject.StartJump(false,0);
 
             if (e.KeyValue == (int)Keys.Right || KeyRight)
@@ -270,9 +261,9 @@ namespace MarioObjects
             if (e.KeyValue == (int)Keys.Space)
                 lev.MarioObject.MarioFireBall();
 
-
-            if (e.KeyValue == (int)Keys.Up)
-                lev.MarioObject.UpPressed = true;
+            
+            if(e.KeyValue == (int)Keys.Enter)
+                lev.MarioObject.EnterPressed = true;
 
             if (e.KeyValue == (int)Keys.Escape)
                 this.Close();
@@ -306,7 +297,18 @@ namespace MarioObjects
 
         public void Load_Level_XML()
         {
-            List<LevelEditorObject> list =  MarioEditorXML.Load_From_XML("lev1.xml");
+            TimerGenerator.RemoveAllTimerEvents();
+
+            MyTime = DateTime.Now;
+
+            SRC = new Rectangle(0, 0, 320, 240);
+            DEST = new Rectangle(0, 0, 320, 240);
+
+            Init_Properties();
+
+            lev = new Level();
+
+            List<LevelEditorObject> list = MarioEditorXML.Load_From_XML("lev1.xml");
             Mario MTemp = null;
             foreach(LevelEditorObject le in list)
             {
@@ -327,6 +329,8 @@ namespace MarioObjects
                     lev.MarioObject = (Mario)lev.Objects[i];
                     break;
                 }
+            lev.MarioObject.OnLevelCompleted += Load_Level_XML;
+            Invalidate();
 
         }
 
