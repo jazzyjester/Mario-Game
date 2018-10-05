@@ -74,70 +74,69 @@ namespace MarioObjects.Objects.GameObjects
             switch (g.OT)
             {
                 case ObjectType.OT_Brick:
+                {
+                    if (State == KoopaState.KS_ShieldMoving)
                     {
-                        if (State == KoopaState.KS_ShieldMoving)
-                        {
-                            if (c.Dir == CollisionDirection.CD_Left || c.Dir == CollisionDirection.CD_Right)
-                                ((BlockBrick)g).BreakBrick();
-                        }
-                    } break;
+                        if (c.Dir == CollisionDirection.CD_Left || c.Dir == CollisionDirection.CD_Right)
+                            ((BlockBrick)g).BreakBrick();
+                    }
+                    break;
+                }
                 case ObjectType.OT_Goomba:
+                {
+                    if (State == KoopaState.KS_ShieldMoving)
                     {
-                        if (State == KoopaState.KS_ShieldMoving)
-                        {
-                            ((MonsterGoomba)g).GoombaFallDie();
-                        }
-                        if (State == KoopaState.KS_Walking)
-                        {
-                            ((MonsterGoomba)g).DirX *= -1;
-                            ((MonsterGoomba)g).newx += 5 * ((MonsterGoomba)g).DirX;
+                        ((MonsterGoomba)g).GoombaFallDie();
+                    }
+                    if (State == KoopaState.KS_Walking)
+                    {
+                        ((MonsterGoomba)g).DirX *= -1;
+                        ((MonsterGoomba)g).newx += 5 * ((MonsterGoomba)g).DirX;
 
-                            ((MonsterGoomba)g).OnWalk(null, null);
-                            DirX *= -1;
-                            OnWalk(null, null);
-                        }
-                        if (State == KoopaState.KS_Shield)
-                        {
-                            ((MonsterGoomba)g).DirX *= -1;
-                            ((MonsterGoomba)g).newx += 5 * ((MonsterGoomba)g).DirX;
-                            ((MonsterGoomba)g).OnWalk(null, null);
-                        }
-                    } break;
+                        ((MonsterGoomba)g).OnWalk(null, null);
+                        DirX *= -1;
+                        OnWalk(null, null);
+                    }
+                    if (State == KoopaState.KS_Shield)
+                    {
+                        ((MonsterGoomba)g).DirX *= -1;
+                        ((MonsterGoomba)g).newx += 5 * ((MonsterGoomba)g).DirX;
+                        ((MonsterGoomba)g).OnWalk(null, null);
+                    }
+                    break;
+                } 
                 case ObjectType.OT_Mario:
+                {
+                    if (State == KoopaState.KS_Shield && ReturningTime >= 3)
                     {
+                        if (c.Dir == CollisionDirection.CD_Left)
+                            DirX = -1;
 
-                        if (State == KoopaState.KS_Shield && ReturningTime >= 3)
+                        if (c.Dir == CollisionDirection.CD_Right)
+                            DirX = 1;
+
+                        SetKoopaState(KoopaState.KS_ShieldMoving);
+                    }
+
+                    // Size-down mario when colliding with a koopa
+                    if (State != KoopaState.KS_Shield) // but not in shield state
+                    {
+                        if (!(State == KoopaState.KS_ShieldMoving // Or that he's just set in motion
+                            && (DirX == -1 && c.Dir == CollisionDirection.CD_Left) || (DirX == 1 && c.Dir == CollisionDirection.CD_Right)))
                         {
-                            if (c.Dir == CollisionDirection.CD_Left)
-                                DirX = -1;
-
-                            if (c.Dir == CollisionDirection.CD_Right)
-                                DirX = 1;
-
-                            SetKoopaState(KoopaState.KS_ShieldMoving);
-                        }
-
-                        // Size-down mario when colliding with a koopa
-                        if (State != KoopaState.KS_Shield) // but not in shield state
-                        {
-                          if (!(State == KoopaState.KS_ShieldMoving // Or that he's just set in motion
-                              && (DirX == -1 && c.Dir == CollisionDirection.CD_Left) || (DirX == 1 && c.Dir == CollisionDirection.CD_Right)))
-                          {
                             Mario m = (Mario)g;
                             if (c.Dir != CollisionDirection.CD_Down)
                             {
-                              if (!m.Blinking)
-                                if (m.Type == Mario.MarioType.MT_Big || m.Type == Mario.MarioType.MT_Fire)
+                                if (!m.Blinking)
                                 {
-                                  m.Type = Mario.MarioType.MT_Small;
-                                  m.StartBlinking();
-                                  m.SetMarioProperties();
+                                    m.MarioHandleCollision();
                                 }
                             }
-                          }
-                    } break;
-            }
-          } 
+                        }
+                    }
+                    break;
+                }
+            } 
         }
         public override void OnAnimate(object sender, EventArgs e)
         {

@@ -43,12 +43,9 @@ namespace MarioObjects.Objects.GameObjects
                         if (c.Dir != CollisionDirection.CD_Down)
                         {
                             if (!m.Blinking)
-                                if (m.Type == Mario.MarioType.MT_Big || m.Type == Mario.MarioType.MT_Fire)
-                                {
-                                    m.Type = Mario.MarioType.MT_Small;
-                                    m.StartBlinking();
-                                    m.SetMarioProperties();
-                                }
+                            {
+                                m.MarioHandleCollision();
+                            }
                         }
 
                     } break;

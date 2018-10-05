@@ -330,8 +330,19 @@ namespace MarioObjects
                     break;
                 }
             lev.MarioObject.OnLevelCompleted += Load_Level_XML;
+            lev.MarioObject.OnMarioDied += MarioObject_OnMarioDied;
             Invalidate();
 
+        }
+
+        private void MarioObject_OnMarioDied()
+        {
+            Load_Level_XML();
+
+            lev.MarioObject.x = 20;
+            lev.MarioObject.y = LevelGenerator.LevelHeight - 16 * 1 - lev.MarioObject.height;
+            LevelGenerator.CurrentLevel.Update_ScreensX();
+            LevelGenerator.CurrentLevel.Update_ScreensY();
         }
 
         private void frmMain_MouseDown(object sender, MouseEventArgs e)

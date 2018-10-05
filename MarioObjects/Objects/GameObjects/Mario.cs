@@ -53,6 +53,9 @@ namespace MarioObjects.Objects.GameObjects
         public delegate void LevelCompletedDelegate();
         public event LevelCompletedDelegate OnLevelCompleted;
 
+        public delegate void MarioDiedDelegate();
+        public event MarioDiedDelegate OnMarioDied;
+
 
         public void OnCheckCollisions(Object sender, EventArgs e)
         {
@@ -103,18 +106,44 @@ namespace MarioObjects.Objects.GameObjects
             }
 
         }
+
         public void MarioDie()
         {
-
-
+            OnMarioDied?.Invoke();
         }
+
+        public void MarioHandleCollision()
+        {
+            switch (Type)
+            {
+                case MarioType.MT_Fire:
+                {
+                    Type = Mario.MarioType.MT_Big;
+                    StartBlinking();
+                    SetMarioProperties();
+                    break;
+                }
+                case MarioType.MT_Big:
+                {
+                    Type = Mario.MarioType.MT_Small;
+                    StartBlinking();
+                    SetMarioProperties();
+                    break;
+                }
+                case MarioType.MT_Small:
+                {
+                    MarioDie();
+                    break;
+                }
+            }
+        }
+
         public bool IsBrickExistOnSidesRight()
         {
             Boolean res = false;
 
             for (int i = 0; i < IntersectsObjects.Count; i++)
-                //if (IntersectsObjects[i].G.GetType().Name == "BlockBrick" || IntersectsObjects[i].G.GetType().Name == "BlockSolid")
-                if (IntersectsObjects[i].G.OT == ObjectType.OT_Brick || IntersectsObjects[i].G.OT == ObjectType.OT_SolidBlock)
+                if (IntersectsObjects[i].G != null && (IntersectsObjects[i].G.OT == ObjectType.OT_Brick || IntersectsObjects[i].G.OT == ObjectType.OT_SolidBlock))
                     if (IntersectsObjects[i].C.Dir == CollisionDirection.CD_Right)
                         res = true;
 
@@ -126,7 +155,7 @@ namespace MarioObjects.Objects.GameObjects
             Boolean res = false;
 
             for (int i = 0; i < IntersectsObjects.Count; i++)
-                if (IntersectsObjects[i].G.GetType().Name == "BlockBrick" || IntersectsObjects[i].G.GetType().Name == "BlockSolid")
+                if (IntersectsObjects[i].G != null && (IntersectsObjects[i].G.OT == ObjectType.OT_Brick || IntersectsObjects[i].G.OT == ObjectType.OT_SolidBlock))
                     if (IntersectsObjects[i].C.Dir == CollisionDirection.CD_Left)
                         res = true;
 
@@ -138,73 +167,99 @@ namespace MarioObjects.Objects.GameObjects
             switch (g.OT)
             {
                 case ObjectType.OT_Exit:
+                {
+                    if (EnterPressed)
                     {
-                        if (EnterPressed)
-                        {
-                            EnterPressed = false;
-                            OnLevelCompleted?.Invoke();
-                            System.Windows.Forms.MessageBox.Show("Very Good !");
-
-                        }
-                    } break;
+                        EnterPressed = false;
+                        OnLevelCompleted?.Invoke();
+                        //System.Windows.Forms.MessageBox.Show("Very Good !");
+                    }
+                    break;
+                } 
                 case ObjectType.OT_Flower:
+                {
+                    ((Flower)g).Visible = false;
+                    if (Type != MarioType.MT_Fire)
                     {
-                        ((Flower)g).Visible = false;
-                        if (Type != MarioType.MT_Fire)
-                        {
-                            Type = MarioType.MT_Fire;
-                            SetMarioProperties();
-                            Media.PlaySound(Media.SoundType.ST_Mush);
-                        }
-
-                    } break;
+                        Type = MarioType.MT_Fire;
+                        SetMarioProperties();
+                        Media.PlaySound(Media.SoundType.ST_Mush);
+                    }
+                    break;
+                } 
                 case ObjectType.OT_Mush:
+                {
+                    ((MushRed)g).Visible = false;
+                    ((MushRed)g).Animated = false;
+                    ((MushRed)g).Live = false;
+                    if (Type == MarioType.MT_Small)
                     {
-                        ((MushRed)g).Visible = false;
-                        ((MushRed)g).Animated = false;
-                        ((MushRed)g).Live = false;
-                        if (Type == MarioType.MT_Small)
-                        {
-                            Type = MarioType.MT_Big;
-                            SetMarioProperties();
-                            Media.PlaySound(Media.SoundType.ST_Mush);
-                        }
-
-
-                    } break;
-
+                        Type = MarioType.MT_Big;
+                        SetMarioProperties();
+                        Media.PlaySound(Media.SoundType.ST_Mush);
+                    }
+                    break;
+                } 
                 case ObjectType.OT_Coin:
-                    {
-                        ((CoinBlock)g).Animated = false;
-                        ((CoinBlock)g).Visible = false;
-                        Media.PlaySound(Media.SoundType.ST_Coin);
-
-                    } break;
+                {
+                    ((CoinBlock)g).Animated = false;
+                    ((CoinBlock)g).Visible = false;
+                    Media.PlaySound(Media.SoundType.ST_Coin);
+                    break;
+                } 
                 case ObjectType.OT_Goomba:
+                {
+                    if (c.Dir == CollisionDirection.CD_Up)
                     {
-                        if (c.Dir == CollisionDirection.CD_Up)
+                        if (((MonsterGoomba)g).FallDie == false)    // Jump On Goomba with Up Presses
                         {
-                            // Jump On Goomba with Up Presses
-                            if (((MonsterGoomba)g).FallDie == false)
-                            {
-                                if (UpPressed)
-                                    StartJump(true, 0);
-                                else
-                                    StartJump(true, -20);
+                            if (UpPressed)
+                                StartJump(true, 0);
+                            else
+                                StartJump(true, -20);
 
-                                ((MonsterGoomba)g).GoombaDie();
-                                Media.PlaySound(Media.SoundType.ST_Stomp);
-                            }
+                            ((MonsterGoomba)g).GoombaDie();
+                            Media.PlaySound(Media.SoundType.ST_Stomp);
                         }
-
-
-                    } break;
-                case ObjectType.OT_Koopa:
+                    }
+                    break;
+                } 
+                case ObjectType.OT_Pirana:
+                {
+                    if (c.Dir == CollisionDirection.CD_Up)      // Jump On Piranah with Up Presses
                     {
-                        if (c.Dir == CollisionDirection.CD_Up)
+                        if (UpPressed)
+                            StartJump(true, 0);
+                        else
+                            StartJump(true, -20);
+
+                        ((MonsterPiranah)g).PiranahDie();
+                        Media.PlaySound(Media.SoundType.ST_Stomp);
+                    }
+                    break;
+                }
+                case ObjectType.OT_Koopa:
+                {
+                    if (c.Dir == CollisionDirection.CD_Up)  // Jump On Koopa with Up Presses
+                    {
+                        if (((MonsterKoopa)g).State == MonsterKoopa.KoopaState.KS_Walking)
                         {
-                            // Jump On Koopa with Up Presses
-                            if (((MonsterKoopa)g).State == MonsterKoopa.KoopaState.KS_Walking)
+                            if (UpPressed)
+                                StartJump(true, 0);
+                            else
+                                StartJump(true, -20);
+
+                            ((MonsterKoopa)g).SetKoopaState(MonsterKoopa.KoopaState.KS_Shield);
+                            Media.PlaySound(Media.SoundType.ST_Stomp);
+                        }
+                        else
+                        {
+                            if ((((MonsterKoopa)g).State == MonsterKoopa.KoopaState.KS_Shield) && (((MonsterKoopa)g).ReturningTime >= 3))
+                            {
+                                ((MonsterKoopa)g).SetKoopaState(MonsterKoopa.KoopaState.KS_ShieldMoving);
+
+                            }
+                            else if (((MonsterKoopa)g).State == MonsterKoopa.KoopaState.KS_ShieldMoving)
                             {
                                 if (UpPressed)
                                     StartJump(true, 0);
@@ -212,34 +267,13 @@ namespace MarioObjects.Objects.GameObjects
                                     StartJump(true, -20);
 
                                 ((MonsterKoopa)g).SetKoopaState(MonsterKoopa.KoopaState.KS_Shield);
-                                Media.PlaySound(Media.SoundType.ST_Stomp);
                             }
-                            else
-                                if ((((MonsterKoopa)g).State == MonsterKoopa.KoopaState.KS_Shield) &&
-                                    (((MonsterKoopa)g).ReturningTime >= 3))
-                                {
-                                    ((MonsterKoopa)g).SetKoopaState(MonsterKoopa.KoopaState.KS_ShieldMoving);
-
-                                }
-                                else if (((MonsterKoopa)g).State == MonsterKoopa.KoopaState.KS_ShieldMoving)
-                                {
-                                    if (UpPressed)
-                                        StartJump(true, 0);
-                                    else
-                                        StartJump(true, -20);
-
-                                    ((MonsterKoopa)g).SetKoopaState(MonsterKoopa.KoopaState.KS_Shield);
-
-                                }
                         }
-
-
-                    } break;
-
-
+                    }
+                    break;
+                } 
                 case ObjectType.OT_MovingBlock:
                     goto case ObjectType.OT_Grass;
-
                 case ObjectType.OT_SolidBlock:
                     goto case ObjectType.OT_Grass;
                 case ObjectType.OT_PipeUp:
@@ -251,105 +285,96 @@ namespace MarioObjects.Objects.GameObjects
                 case ObjectType.OT_Brick:
                     goto case ObjectType.OT_Grass;
                 case ObjectType.OT_Grass:
+                {
+                    SetDirections();
+
+                    if (c.Dir == CollisionDirection.CD_TopLeft)
                     {
-                        SetDirections();
-
-                        if (c.Dir == CollisionDirection.CD_TopLeft)
+                        if (g.OT == ObjectType.OT_Brick)
                         {
-                            if (g.OT == ObjectType.OT_Brick)
-                            {
-                                //if (MoveState == MarioMoveState.J_Right)
-                                //    x -= (int)XAdd;
-                                //if (MoveState == MarioMoveState.J_Left)
-                                //    x += (int)XAdd;
-
-
-                                //Intersection_None();
-                            }
-
-
+                            //if (MoveState == MarioMoveState.J_Right)
+                            //    x -= (int)XAdd;
+                            //if (MoveState == MarioMoveState.J_Left)
+                            //    x += (int)XAdd;
+                            
+                            //Intersection_None();
                         }
-                        if (c.Dir == CollisionDirection.CD_Up)
+                    }
+                    if (c.Dir == CollisionDirection.CD_Up)
+                    {
+                        if (g.OT == ObjectType.OT_MovingBlock)
                         {
-
-                            if (g.OT == ObjectType.OT_MovingBlock)
-                            {
-                                this.y = g.newy - this.height;
-                                ((BlockMoving)g).MarioOn = true;
-
-                            }
-                            else
-                            {
-                                if (State != MarioJumpState.J_None)
-                                    this.y = g.newy - this.height;
-                            }
+                            this.y = g.newy - this.height;
+                            ((BlockMoving)g).MarioOn = true;
+                        }
+                        else
+                        {
                             if (State != MarioJumpState.J_None)
-                                State = MarioJumpState.J_None;
-                            SetDirections();
-
+                                this.y = g.newy - this.height;
                         }
-
-                        if (c.Dir == CollisionDirection.CD_Left)
+                        if (State != MarioJumpState.J_None)
                         {
+                            State = MarioJumpState.J_None;
+                        }
+                        SetDirections();
+                    }
+
+                    if (c.Dir == CollisionDirection.CD_Left)
+                    {
+                        this.x = g.newx - width;
+                        //if (g.OT == ObjectType.OT_SolidBlock)
+                        //    Intersection_None();
+                        if (g.OT == ObjectType.OT_Brick)
+                        {
+                            //if (MoveState == MarioMoveState.J_Right)
+                            //    x -= (int)XAdd;
+                            //if (MoveState == MarioMoveState.J_Left)
+                            //    x += (int)XAdd;
                             this.x = g.newx - width;
-                            //if (g.OT == ObjectType.OT_SolidBlock)
-                            //    Intersection_None();
+                        }
+                    }
+
+                    if (c.Dir == CollisionDirection.CD_Down)
+                    {
+                        if (State == MarioJumpState.J_Up)
+                        {
+                            State = MarioJumpState.JDown;
+                            StartPosition = y;
+                            TimeCount = 0;
+                            StartVelocity = 0;
+                            if (g.OT == ObjectType.OT_BlockQuestion || g.OT == ObjectType.OT_BlockQuestionHidden)
+                            {
+                                ((BlockQuestion)g).isMonsterExist();
+                                ((BlockQuestion)g).StartMove();
+                                if (((BlockQuestion)g).HiddenObject.OT != ObjectType.OT_Coin)
+                                    Media.PlaySound(Media.SoundType.ST_Block);
+                            }
                             if (g.OT == ObjectType.OT_Brick)
                             {
-                                //if (MoveState == MarioMoveState.J_Right)
-                                //    x -= (int)XAdd;
-                                //if (MoveState == MarioMoveState.J_Left)
-                                //    x += (int)XAdd;
-                                this.x = g.newx - width;
-
+                                if (Type == MarioType.MT_Big || Type == MarioType.MT_Fire)
+                                {
+                                    ((BlockBrick)g).BreakBrick();
+                                    Media.PlaySound(Media.SoundType.ST_Brick);
+                                }
+                                else
+                                {
+                                    Media.PlaySound(Media.SoundType.ST_Block);
+                                }
 
                             }
-
                         }
 
-                        if (c.Dir == CollisionDirection.CD_Down)
-                        {
-                            if (State == MarioJumpState.J_Up)
-                            {
-                                State = MarioJumpState.JDown;
-                                StartPosition = y;
-                                TimeCount = 0;
-                                StartVelocity = 0;
-                                if (g.OT == ObjectType.OT_BlockQuestion || g.OT == ObjectType.OT_BlockQuestionHidden)
-                                {
-                                    ((BlockQuestion)g).isMonsterExist();
-                                    ((BlockQuestion)g).StartMove();
-                                    if (((BlockQuestion)g).HiddenObject.OT != ObjectType.OT_Coin)
-                                        Media.PlaySound(Media.SoundType.ST_Block);
-                                }
-                                if (g.OT == ObjectType.OT_Brick)
-                                {
-                                    if (Type == MarioType.MT_Big || Type == MarioType.MT_Fire)
-                                    {
-                                        ((BlockBrick)g).BreakBrick();
-                                        Media.PlaySound(Media.SoundType.ST_Brick);
-                                    }
-                                    else
-                                    {
-                                        Media.PlaySound(Media.SoundType.ST_Block);
-                                    }
-
-                                }
-                            }
-
-                        }
-                        if (c.Dir == CollisionDirection.CD_Right)
-                        {
-                            this.x = g.newx + g.width;
-                            //if (g.OT == ObjectType.OT_SolidBlock)
-                            //    Intersection_None();
-                            //XAdd = 0;    
-                        }
-
-                    } break;
-
+                    }
+                    if (c.Dir == CollisionDirection.CD_Right)
+                    {
+                        this.x = g.newx + g.width;
+                        //if (g.OT == ObjectType.OT_SolidBlock)
+                        //    Intersection_None();
+                        //XAdd = 0;    
+                    }
+                    break;
+                } 
             }
-
         }
 
         public void SetX(int x)
@@ -363,7 +388,6 @@ namespace MarioObjects.Objects.GameObjects
             SetDirections();
             Moving = true;
             //LevelGenerator.Raise_Event(LevelGenerator.LevelEvent.LE_Check_Collision);
-
         }
 
         public override void Draw()
@@ -471,13 +495,6 @@ namespace MarioObjects.Objects.GameObjects
 
         public double CalcMarioJumpPosition()
         {//http://study.eitan.ac.il/sites/index.php?portlet_id=110529&page_id=13
-
-            double Extra = 1;
-            if (State == MarioJumpState.J_Up)
-                Extra = 2.5;
-
-
-
             return StartPosition + StartVelocity * TimeCount + 4.9 * TimeCount * TimeCount;
         }
 
@@ -557,11 +574,7 @@ namespace MarioObjects.Objects.GameObjects
         {
             if (y > LevelGenerator.CurrentLevel.height + 50)
             {
-                //MessageBox.Show("You Lost...");
-                x = 20;
-                y = LevelGenerator.LevelHeight - 16 * 1 - height;
-                LevelGenerator.CurrentLevel.Update_ScreensX();
-                LevelGenerator.CurrentLevel.Update_ScreensY();
+                MarioDie();
             }
 
             if (MoveState != MarioMoveState.J_None && MoveState != MarioMoveState.J_Stopping)
@@ -643,10 +656,8 @@ namespace MarioObjects.Objects.GameObjects
                 height = 27;
                 y -= 11;
             }
-
-
-
         }
+
         public void StartBlinking()
         {
             if (Blinking == false)

@@ -22,27 +22,27 @@ namespace MarioObjects.Objects.GameObjects
 
     public override void Intersection(Collision c, GraphicObject g)
     {
-      base.Intersection(c, g);
+        base.Intersection(c, g);
 
-      switch (g.OT)
-      {
-        case ObjectType.OT_Mario:
-          {
-            // Handle collision with Mario
-            if (Move != PiranaMove.PM_None) // Only if the pirana is out of its pipe
+        switch (g.OT)
+        {
+            case ObjectType.OT_Mario:
             {
-              Mario m = (Mario)g;
-              if (!m.Blinking)
-                if (m.Type == Mario.MarioType.MT_Big || m.Type == Mario.MarioType.MT_Fire)
+                // Handle collision with Mario
+                if (Move != PiranaMove.PM_None) // Only if the pirana is out of its pipe
                 {
-                  m.Type = Mario.MarioType.MT_Small;
-                  m.StartBlinking();
-                  m.SetMarioProperties();
+                    if (c.Dir != CollisionDirection.CD_Down)
+                    {
+                        Mario m = (Mario)g;
+                        if (!m.Blinking)
+                        {
+                            m.MarioHandleCollision();
+                        }
+                    }
                 }
+                break;
             }
-          }
-          break;
-      }
+        }
     }
 
     public void SetDirection()
@@ -153,10 +153,15 @@ namespace MarioObjects.Objects.GameObjects
                 dx *= -1;
 
             Ball.SetOffXY(dx, dy);
-
-
-
         }
+
+        public void PiranahDie()
+        {
+            newy = LevelGenerator.LevelHeight;
+            Animated = false;
+            Live = false;
+        }
+
         public override void Draw()
         {
             base.Draw();
