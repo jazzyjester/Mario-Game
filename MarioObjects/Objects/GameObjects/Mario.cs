@@ -40,6 +40,12 @@ namespace MarioObjects.Objects.GameObjects
         public List<FireBall> FireBalls;
         public int FireBallIndex;
 
+        /// <summary>
+        /// Number of coins Mario collected in the current level
+        /// </summary>
+        public int NumberOfCollectedCoins { get; set; }
+
+
         public static LevelEditorObject GetLEObject()
         {
             return new LevelEditorObject(16, 16, 6, 2, ObjectType.OT_Mario, null);
@@ -109,6 +115,7 @@ namespace MarioObjects.Objects.GameObjects
 
         public void MarioDie()
         {
+            NumberOfCollectedCoins = 0;
             OnMarioDied?.Invoke();
         }
 
@@ -205,6 +212,7 @@ namespace MarioObjects.Objects.GameObjects
                     ((CoinBlock)g).Animated = false;
                     ((CoinBlock)g).Visible = false;
                     Media.PlaySound(Media.SoundType.ST_Coin);
+                    NumberOfCollectedCoins++;
                     break;
                 } 
                 case ObjectType.OT_Goomba:
@@ -347,7 +355,14 @@ namespace MarioObjects.Objects.GameObjects
                                 ((BlockQuestion)g).isMonsterExist();
                                 ((BlockQuestion)g).StartMove();
                                 if (((BlockQuestion)g).HiddenObject.OT != ObjectType.OT_Coin)
+                                {
                                     Media.PlaySound(Media.SoundType.ST_Block);
+                                }
+                                else
+                                {
+                                    NumberOfCollectedCoins++;
+                                    Media.PlaySound(Media.SoundType.ST_Coin);
+                                }
                             }
                             if (g.OT == ObjectType.OT_Brick)
                             {
@@ -685,6 +700,7 @@ namespace MarioObjects.Objects.GameObjects
             UpPressed = false;
             Blinking = false;
             BlinkingShow = true;
+            NumberOfCollectedCoins = 0;
 
 
             Moving = false;
