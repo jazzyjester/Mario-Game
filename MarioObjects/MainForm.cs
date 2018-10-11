@@ -14,8 +14,6 @@ using MarioObjects.Objects.Utils;
 
 namespace MarioObjects
 {
-
-    
     public partial class frmMain : Form
     {
         public const int WM_NCLBUTTONDOWN = 0xA1;
@@ -24,8 +22,7 @@ namespace MarioObjects
 
 
         [DllImportAttribute("user32.dll")]
-        public static extern int SendMessage(IntPtr hWnd,
-                         int Msg, int wParam, int lParam);
+        public static extern int SendMessage(IntPtr hWnd, int Msg, int wParam, int lParam);
         [DllImportAttribute("user32.dll")]
         public static extern bool ReleaseCapture();
 
@@ -34,11 +31,9 @@ namespace MarioObjects
 
         public Level lev;
         public int BackPaint = 0;
-        Rectangle SRC ;
-        Rectangle DEST;
 
-        DateTime MyTime;
-
+        DateTime LevelBeginTime;
+        
 
         public frmMain()
         {
@@ -51,11 +46,6 @@ namespace MarioObjects
             Height = 240  + 25;
 
             //Cursor.Hide();
-            
-            //pBack.Left = 0;
-            //pBack.Top = 0;
-            //pBack.Width = pBack.Image.Width;
-            //pBack.Height = pBack.Image.Height;
 
             pMain.Image = new Bitmap(320,240);
             pMain.Left = 0;
@@ -65,50 +55,22 @@ namespace MarioObjects
             
             Left = SystemInformation.PrimaryMonitorSize.Width / 2 - this.Width / 2;
             Top = SystemInformation.PrimaryMonitorSize.Height / 2 - this.Height / 2;
-
+            
             Media.PlaySound(Media.SoundType.ST_level2);
         }
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            Load_Level_XML();
-        }
-
-        private void MainForm_Paint(object sender, PaintEventArgs e)
-        {
-            //Graphics xGraph;
-            //xGraph = e.Graphics;
-            //lev.Draw();
-           
-            //xGraph.DrawImage(ImageGenerator.GetImage(ObjectType.OT_Frame),0,0,640+120,480 + 120);
-            //xGraph.DrawImage(ImageGenerator.GetImage(ObjectType.OT_Frame), 0, 0);
-           // xGraph.DrawImage(Screen.GetSubScreen,DEST,SRC,GraphicsUnit.Pixel);
-            //xGraph.DrawImage(Screen.GetSubScreen,0,0,320,240);
-            //if (BackPaint == 50)
-           // {
-           //     BackPaint = 0;
-           // xGraph.DrawImage(ImageGenerator.GetImage(ObjectType.OT_Frame), 0, 0, 640 + 120, 480 + 120);
-           // }
-        }
-
-        protected override void OnPaint(PaintEventArgs e)
-        {
-             //Graphics xGraph;
-             //xGraph = e.Graphics ;
-             //lev.Draw();
-             
-             //xGraph.DrawImage(Screen.GetSubScreen,DEST,SRC,GraphicsUnit.Pixel);
-             //xGraph.DrawImage(ImageGenerator.GetImage(ObjectType.OT_Frame), 0, 0, 640 + 120, 480 + 120);
-
-             //base.OnPaint(e);
+            LevelManager.Instance.InitLevelManager("LevelManager.xml");
+            Load_Level(LevelManagerLoadTypes.STARTUP);
         }
 
         private void timerPaint_Tick(object sender, EventArgs e)
         {
             pMain.Invalidate();
             DateTime TimeClose = DateTime.Now;
-            TimeSpan Diff = TimeClose.Subtract(MyTime);
-            this.Text = string.Format("{0:00}:{1:00}:{2:00}", Diff.Hours, Diff.Minutes, Diff.Seconds) + "     |     Coins: " + lev?.MarioObject?.NumberOfCollectedCoins.ToString();
+            TimeSpan Diff = TimeClose.Subtract(LevelBeginTime);
+            this.Text = string.Format("{0:00}:{1:00}:{2:00}", Diff.Hours, Diff.Minutes, Diff.Seconds) + "  |  Coins: " + lev?.MarioObject?.NumberOfCollectedCoins.ToString() + "  |  Lives: " + LevelManager.Instance.MarioLives.ToString() + "  |  Level: " + LevelManager.Instance.CurrentLevelName;
         }
 
         private void MainForm_KeyDown(object sender, KeyEventArgs e)
@@ -143,8 +105,6 @@ namespace MarioObjects
 
             //if (e.KeyValue == (int)Keys.Down)
             //    BM.newy += 2;
-
-           
         }
 
         private void frmMain_KeyUp(object sender, KeyEventArgs e)
@@ -164,53 +124,25 @@ namespace MarioObjects
         }
 
 
-        public void Load_Level_XML()
+        public void Load_Level(LevelManagerLoadTypes levelLoadType)
         {
             TimerGenerator.RemoveAllTimerEvents();
 
-            MyTime = DateTime.Now;
-
-            SRC = new Rectangle(0, 0, 320, 240);
-            DEST = new Rectangle(0, 0, 320, 240);
-
             Init_Properties();
 
-            lev = new Level();
+            lev = LevelManager.Instance.LoadLevel(levelLoadType);
 
-            List<LevelEditorObject> list = MarioEditorXML.Load_From_XML("lev1.xml");
-            Mario MTemp = null;
-            foreach(LevelEditorObject le in list)
-            {
-                GraphicObject g = ObjectGenerator.SetEditorObject(le);
-                if (g != null && g.OT != ObjectType.OT_Mario)
-                    lev.AddObject(g);
-                else if (g.OT == ObjectType.OT_Mario)
-                    MTemp = (Mario)g;
-            }
-
-            lev.AddObject(MTemp);
-
-            for (int i = 0; i < lev.Objects.Count; i++)
-            {
-                if (lev.Objects[i].OT == ObjectType.OT_Mario)
-                {
-                    lev.MarioObject = (Mario)lev.Objects[i];
-                    break;
-                }
-            }
-            lev.MarioObject.OnLevelCompleted += Load_Level_XML;
-            lev.MarioObject.OnMarioDied += MarioObject_OnMarioDied;
-            Invalidate();
-        }
-
-        private void MarioObject_OnMarioDied()
-        {
-            Load_Level_XML();
+            lev.MarioObject.OnLevelCompleted += (() => Load_Level(LevelManagerLoadTypes.NEXT));
+            lev.MarioObject.OnMarioDied += (() => Load_Level(LevelManagerLoadTypes.RELOAD));
 
             lev.MarioObject.x = 20;
             lev.MarioObject.y = LevelGenerator.LevelHeight - 16 * 1 - lev.MarioObject.height;
             LevelGenerator.CurrentLevel.Update_ScreensX();
             LevelGenerator.CurrentLevel.Update_ScreensY();
+
+            LevelBeginTime = DateTime.Now;
+
+            Invalidate();
         }
 
         private void frmMain_MouseDown(object sender, MouseEventArgs e)
@@ -229,7 +161,7 @@ namespace MarioObjects
 
         private void pMain_Paint(object sender, PaintEventArgs e)
         {
-            Graphics xGraph = e.Graphics;//Graphics.FromImage(pMain.Image) ; 
+            Graphics xGraph = e.Graphics; 
             lev.Draw();
             MarioObjects.Objects.Utils.Screen.Instance.DrawOnGraphic(xGraph);      
         }
@@ -241,8 +173,10 @@ namespace MarioObjects
 
         private void frmMain_FormClosed(object sender, FormClosedEventArgs e)
         {
+            LevelManager.Instance.SaveLevelManager("LevelManager.xml");
+
             DateTime TimeClose = DateTime.Now;
-            TimeSpan Diff = TimeClose.Subtract(MyTime);
+            TimeSpan Diff = TimeClose.Subtract(LevelBeginTime);
             Logger.Instance.Log_Method(Diff.ToString());
         }
 

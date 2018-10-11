@@ -1,6 +1,8 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarioObjects", "MarioObjects\MarioObjects.csproj", "{5494C1DD-9401-4472-93C0-CA9D620BE728}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MarioRectangle", "MarioRectangle\MarioRectangle.csproj", "{4B7DF11C-7932-4A33-ADD2-B03A34428B72}"

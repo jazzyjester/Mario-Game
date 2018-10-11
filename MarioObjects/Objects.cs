@@ -54,6 +54,12 @@ namespace MarioObjects
 
         public static void RemoveAllTimerEvents()
         {
+            foreach (KeyValuePair<TimerType, Timer> timerPair in Instance.Timers)
+            {
+                timerPair.Value.Stop();
+                timerPair.Value.Dispose();
+            }
+            Instance.Timers.Clear();
             Instance.Events.Clear();
         }
 
@@ -91,27 +97,26 @@ namespace MarioObjects
         }
 
         public static Timer GetTimer(TimerType value)
-        {
-                  
-                    if (!Instance.Timers.ContainsKey(value))
-                    {
-                        Instance.Timers[value] = new Timer();
-                        Instance.Timers[value].Interval = (int)value;
-                        switch (value)
-                        {
-                            case TimerType.TT_50:
-                                Instance.Timers[value].Tick += new EventHandler(instance.TT_50_Tick); break;
-                            case TimerType.TT_100:
-                                Instance.Timers[value].Tick += new EventHandler(instance.TT_100_Tick); break;
-                            case TimerType.TT_200:
-                                Instance.Timers[value].Tick += new EventHandler(instance.TT_200_Tick); break;
-                            case TimerType.TT_500:
-                                Instance.Timers[value].Tick += new EventHandler(instance.TT_500_Tick); break;
-                        }
-                        Instance.Timers[value].Enabled = true;
-                    }
+        {   
+            if (!Instance.Timers.ContainsKey(value))
+            {
+                Instance.Timers[value] = new Timer();
+                Instance.Timers[value].Interval = (int)value;
+                switch (value)
+                {
+                    case TimerType.TT_50:
+                        Instance.Timers[value].Tick += new EventHandler(instance.TT_50_Tick); break;
+                    case TimerType.TT_100:
+                        Instance.Timers[value].Tick += new EventHandler(instance.TT_100_Tick); break;
+                    case TimerType.TT_200:
+                        Instance.Timers[value].Tick += new EventHandler(instance.TT_200_Tick); break;
+                    case TimerType.TT_500:
+                        Instance.Timers[value].Tick += new EventHandler(instance.TT_500_Tick); break;
+                }
+                Instance.Timers[value].Enabled = true;
+            }
 
-                    return instance.Timers[value];
+            return instance.Timers[value];
         }
 
         TimerGenerator()

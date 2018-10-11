@@ -70,18 +70,15 @@ namespace MarioObjects
             this.ClientSize = new System.Drawing.Size(486, 335);
             this.Controls.Add(this.pMain);
             this.DoubleBuffered = true;
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.MaximizeBox = false;
             this.Name = "frmMain";
             this.StartPosition = System.Windows.Forms.FormStartPosition.Manual;
             this.Text = "Mario By Jazzy";
-            this.Load += new System.EventHandler(this.MainForm_Load);
-            this.Paint += new System.Windows.Forms.PaintEventHandler(this.MainForm_Paint);
             this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.frmMain_FormClosed);
-            this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.frmMain_MouseDown);
-            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.frmMain_KeyUp);
+            this.Load += new System.EventHandler(this.MainForm_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyDown);
+            this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.frmMain_KeyUp);
+            this.MouseDown += new System.Windows.Forms.MouseEventHandler(this.frmMain_MouseDown);
             ((System.ComponentModel.ISupportInitialize)(this.pMain)).EndInit();
             this.ResumeLayout(false);
 

@@ -206,7 +206,15 @@ namespace MarioObjects.Objects.GameObjects
                         Media.PlaySound(Media.SoundType.ST_Mush);
                     }
                     break;
-                } 
+                }
+                case ObjectType.OT_MushLife:
+                {
+                    ((MushLife)g).Visible = false;
+                    ((MushLife)g).Animated = false;
+                    ((MushLife)g).Live = false;
+                    LevelManager.Instance.MarioLives++;
+                    break;
+                }
                 case ObjectType.OT_Coin:
                 {
                     ((CoinBlock)g).Animated = false;
