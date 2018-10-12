@@ -628,17 +628,6 @@
     <Bool3>false</Bool3>
   </Object>
   <Object>
-    <OName>Mario</OName>
-    <X>2</X>
-    <Y>1</Y>
-    <Int1>0</Int1>
-    <Int2>0</Int2>
-    <Int3>0</Int3>
-    <Bool1>false</Bool1>
-    <Bool2>false</Bool2>
-    <Bool3>false</Bool3>
-  </Object>
-  <Object>
     <OName>BlockMoving</OName>
     <X>14</X>
     <Y>11</Y>
@@ -763,6 +752,17 @@
     <OName>ExitBlock</OName>
     <X>33</X>
     <Y>18</Y>
+    <Int1>0</Int1>
+    <Int2>0</Int2>
+    <Int3>0</Int3>
+    <Bool1>false</Bool1>
+    <Bool2>false</Bool2>
+    <Bool3>false</Bool3>
+  </Object>
+  <Object>
+    <OName>Mario</OName>
+    <X>2</X>
+    <Y>1</Y>
     <Int1>0</Int1>
     <Int2>0</Int2>
     <Int3>0</Int3>

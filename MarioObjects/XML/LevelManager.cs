@@ -90,7 +90,10 @@ namespace MarioObjects
                     if (CurrentLevelIndex >= LevelFilePaths.Count)
                     {
                         CurrentLevelIndex = LevelFilePaths.Count - 1;
-                        MessageBox.Show("The highest level was reached.", "Highest level reached.", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        if(MessageBox.Show("The highest level was reached. Do you want to start from the first level again (Yes)? Otherwise the current level is repeated.", "Highest level reached.", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                        {
+                            CurrentLevelIndex = 0;
+                        }
                     }
                     break;
                 }

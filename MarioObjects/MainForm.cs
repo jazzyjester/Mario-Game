@@ -43,15 +43,15 @@ namespace MarioObjects
         public void Init_Properties()
         {
             Width = 320;
-            Height = 240  + 25;
+            Height = 240  + 40 + flowPanel_gameInfo.Height;
 
             //Cursor.Hide();
 
             pMain.Image = new Bitmap(320,240);
-            pMain.Left = 0;
+            /*pMain.Left = 0;
             pMain.Top = 0;
             pMain.Width = pMain.Image.Width;
-            pMain.Height = pMain.Image.Height;
+            pMain.Height = pMain.Image.Height;*/
             
             Left = SystemInformation.PrimaryMonitorSize.Width / 2 - this.Width / 2;
             Top = SystemInformation.PrimaryMonitorSize.Height / 2 - this.Height / 2;
@@ -70,7 +70,10 @@ namespace MarioObjects
             pMain.Invalidate();
             DateTime TimeClose = DateTime.Now;
             TimeSpan Diff = TimeClose.Subtract(LevelBeginTime);
-            this.Text = string.Format("{0:00}:{1:00}:{2:00}", Diff.Hours, Diff.Minutes, Diff.Seconds) + "  |  Coins: " + lev?.MarioObject?.NumberOfCollectedCoins.ToString() + "  |  Lives: " + LevelManager.Instance.MarioLives.ToString() + "  |  Level: " + LevelManager.Instance.CurrentLevelName;
+            this.Text = string.Format("{0:00}:{1:00}:{2:00}", Diff.Hours, Diff.Minutes, Diff.Seconds);
+            lbl_Level.Text = "Level " + (LevelManager.Instance.CurrentLevelIndex + 1).ToString() + " (" + LevelManager.Instance.CurrentLevelName + ")";
+            lbl_numCoins.Text = lev?.MarioObject?.NumberOfCollectedCoins.ToString();
+            lbl_numLives.Text = LevelManager.Instance.MarioLives.ToString();
         }
 
         private void MainForm_KeyDown(object sender, KeyEventArgs e)

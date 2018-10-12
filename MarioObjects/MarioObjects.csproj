@@ -197,6 +197,7 @@
     <EmbeddedResource Include="Images\Blocks\solidblock.png" />
     <EmbeddedResource Include="Images\Blocks\exit.png" />
     <EmbeddedResource Include="Images\Backgrounds\Frame.png" />
+    <Content Include="Images\Items\mushLife.png" />
     <Content Include="MarioIcon.ico" />
     <EmbeddedResource Include="Sounds\level2.mp3" />
     <Content Include="XML\lev1.xml" />

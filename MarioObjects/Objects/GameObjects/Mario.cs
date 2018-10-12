@@ -434,14 +434,7 @@ namespace MarioObjects.Objects.GameObjects
                     Rectangle dest = new Rectangle(x - Screen.BackgroundScreen.x, y - (LevelGenerator.LevelHeight - Screen.BackgroundScreen.height) + Screen.BackgroundScreen.y, width, height);
                     Rectangle src = new Rectangle(16 * ImageIndex, 0, b.Width / 6, b.Height);
 
-                    //Mario regular
-                    //Rectangle R = GetObjectRect();
-                    //R.Inflate(10, 10);
-                    //LevelGenerator.CurrentLevel.DrawBackground(R);
-
                     xGraph.DrawImage(b, dest, src, GraphicsUnit.Pixel);
-
-                    //xGraph.Dispose();
                 }
             }
 

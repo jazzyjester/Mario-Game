@@ -100,8 +100,8 @@
     <Bool3>false</Bool3>
   </Object>
   <Object>
-    <OName>Mario</OName>
-    <X>1</X>
+    <OName>ExitBlock</OName>
+    <X>37</X>
     <Y>1</Y>
     <Int1>0</Int1>
     <Int2>0</Int2>
@@ -441,17 +441,6 @@
     <Bool3>false</Bool3>
   </Object>
   <Object>
-    <OName>ExitBlock</OName>
-    <X>37</X>
-    <Y>1</Y>
-    <Int1>0</Int1>
-    <Int2>0</Int2>
-    <Int3>0</Int3>
-    <Bool1>false</Bool1>
-    <Bool2>false</Bool2>
-    <Bool3>false</Bool3>
-  </Object>
-  <Object>
     <OName>MonsterKoopa</OName>
     <X>12</X>
     <Y>1</Y>
@@ -476,6 +465,17 @@
   <Object>
     <OName>BlockPipeUp</OName>
     <X>17</X>
+    <Y>1</Y>
+    <Int1>0</Int1>
+    <Int2>0</Int2>
+    <Int3>0</Int3>
+    <Bool1>false</Bool1>
+    <Bool2>false</Bool2>
+    <Bool3>false</Bool3>
+  </Object>
+  <Object>
+    <OName>Mario</OName>
+    <X>1</X>
     <Y>1</Y>
     <Int1>0</Int1>
     <Int2>0</Int2>
