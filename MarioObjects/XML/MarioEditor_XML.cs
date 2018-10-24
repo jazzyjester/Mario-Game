@@ -5,8 +5,9 @@ using System.Xml.Serialization;
 using System.Xml;
 using System.IO;
 
-using MarioObjects;
 using MarioObjects.Objects.Utils;
+using MarioObjects.Objects.BaseObjects;
+using MarioObjects.Objects.GameObjects;
 
 namespace MarioObjects
 {
@@ -81,10 +82,28 @@ namespace MarioObjects
                     Res.Add(le);
                 }
             }
-
-
-
+            
             return Res;
+        }
+
+        public static Level Load_Level_From_XML(string filename)
+        {
+            Level lev = new Level();
+
+            List<LevelEditorObject> levelEditorObjects = Load_From_XML(filename);
+            foreach (LevelEditorObject levelObject in levelEditorObjects)
+            {
+                GraphicObject g = ObjectGenerator.SetEditorObject(levelObject);
+                if(g == null) { continue; }
+
+                lev.AddObject(g);
+                if(g.OT == ObjectType.OT_Mario)
+                {
+                    lev.MarioObject = (Mario)g;
+                }
+            }
+
+            return lev;
         }
     }
 }

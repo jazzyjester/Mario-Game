@@ -35,63 +35,61 @@ namespace MarioObjects.Objects.GameObjects
                     goto case ObjectType.OT_Grass;
 
                 case ObjectType.OT_Grass:
-                    {
-                        StartFireBall();
-
-                    } break;
-
+                {
+                    StartFireBall();
+                    break;
+                } 
                 case ObjectType.OT_PipeUp:
+                {
+                    Started = false;
+                    Visible = false;
+                    break;
+                } 
+                case ObjectType.OT_Goomba:
+                {
+                    if (Type == FireBallType.FT_Mario)
                     {
+                        ((MonsterGoomba)g).GoombaFallDie();
+
                         Started = false;
                         Visible = false;
-                    } break;
-                case ObjectType.OT_Goomba:
-                    {
-                        if (Type == FireBallType.FT_Mario)
-                        {
-                            ((MonsterGoomba)g).GoombaFallDie();
-
-                            Started = false;
-                            Visible = false;
-                        }
-
-                    } break;
+                    }
+                    break;
+                } 
                 case ObjectType.OT_Koopa:
+                {
+                    if (Type == FireBallType.FT_Mario)
                     {
-                        if (Type == FireBallType.FT_Mario)
-                        {
-                            ((MonsterKoopa)g).SetKoopaState(MonsterKoopa.KoopaState.KS_Shield);
+                        ((MonsterKoopa)g).SetKoopaState(MonsterKoopa.KoopaState.KS_Shield);
 
-                            Started = false;
-                            Visible = false;
-                        }
-                    } break;
+                        Started = false;
+                        Visible = false;
+                    }
+                    break;
+                } 
                 case ObjectType.OT_Pirana:
+                {
+                    if (Type == FireBallType.FT_Mario && ((MonsterPiranah)g).Move != MonsterPiranah.PiranaMove.PM_None) // Only kill pirana if it's out of its pipe
                     {
-                        if (Type == FireBallType.FT_Mario
-                            && ((MonsterPiranah)g).Move != MonsterPiranah.PiranaMove.PM_None) // Only kill pirana if it's out of its pipe
-                        {
-                            ((MonsterPiranah)g).Visible = false;
-                            ((MonsterPiranah)g).Live = false;
-                        }
-                    } break;
+                        ((MonsterPiranah)g).Visible = false;
+                        ((MonsterPiranah)g).Live = false;
+                    }
+                    break;
+                } 
                 // Handle fireball hitting Mario
                 case ObjectType.OT_Mario:
+                {
+                    if (Type != FireBallType.FT_Mario) // Make sure it isn't Mario's fireball
                     {
-                      if (Type != FireBallType.FT_Mario) // Make sure it isn't Mario's fireball
-                      {
                         Mario m = (Mario)g;
                         if (!m.Blinking)
-                          if (m.Type == Mario.MarioType.MT_Big || m.Type == Mario.MarioType.MT_Fire)
-                          {
-                            m.Type = Mario.MarioType.MT_Small;
-                            m.StartBlinking();
-                            m.SetMarioProperties();
-                          }
-                      }
-                    } break;
+                        {
+                            m.MarioHandleCollision();
+                        }
+                    }
+                    break;
+                } 
             }
-
         } 
 
         public void RunFireBall(int x, int y, FireBallType T, FireBallDir D)

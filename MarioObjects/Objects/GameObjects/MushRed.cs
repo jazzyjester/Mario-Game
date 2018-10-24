@@ -7,12 +7,12 @@ namespace MarioObjects.Objects.GameObjects
 {
     public class MushRed : MoveableAnimatedObject
     {
-
         public override void OnWalk(object sender, EventArgs e)
         {
             if (Live)
                 base.OnWalk(sender, e);
         }
+
         public MushRed(int x, int y)
             : base(ObjectType.OT_Mush)
         {
@@ -26,7 +26,6 @@ namespace MarioObjects.Objects.GameObjects
             Visible = false;
 
             TimerGenerator.AddTimerEventHandler(TimerType.TT_50, OnWalk);
-
         }
     }
 }

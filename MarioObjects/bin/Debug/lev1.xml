@@ -375,17 +375,6 @@
     <Bool3>false</Bool3>
   </Object>
   <Object>
-    <OName>Mario</OName>
-    <X>4</X>
-    <Y>1</Y>
-    <Int1>0</Int1>
-    <Int2>0</Int2>
-    <Int3>0</Int3>
-    <Bool1>false</Bool1>
-    <Bool2>false</Bool2>
-    <Bool3>false</Bool3>
-  </Object>
-  <Object>
     <OName>BlockBrick</OName>
     <X>4</X>
     <Y>4</Y>
@@ -553,17 +542,6 @@
   <Object>
     <OName>BlockQuestion</OName>
     <X>7</X>
-    <Y>4</Y>
-    <Int1>0</Int1>
-    <Int2>0</Int2>
-    <Int3>0</Int3>
-    <Bool1>false</Bool1>
-    <Bool2>false</Bool2>
-    <Bool3>false</Bool3>
-  </Object>
-  <Object>
-    <OName>BlockQuestion</OName>
-    <X>9</X>
     <Y>4</Y>
     <Int1>0</Int1>
     <Int2>0</Int2>
@@ -2776,6 +2754,39 @@
     <OName>CoinBlock</OName>
     <X>17</X>
     <Y>6</Y>
+    <Int1>0</Int1>
+    <Int2>0</Int2>
+    <Int3>0</Int3>
+    <Bool1>false</Bool1>
+    <Bool2>false</Bool2>
+    <Bool3>false</Bool3>
+  </Object>
+  <Object>
+    <OName>ExitBlock</OName>
+    <X>33</X>
+    <Y>1</Y>
+    <Int1>0</Int1>
+    <Int2>0</Int2>
+    <Int3>0</Int3>
+    <Bool1>false</Bool1>
+    <Bool2>false</Bool2>
+    <Bool3>false</Bool3>
+  </Object>
+  <Object>
+    <OName>BlockQuestion</OName>
+    <X>9</X>
+    <Y>4</Y>
+    <Int1>23</Int1>
+    <Int2>0</Int2>
+    <Int3>0</Int3>
+    <Bool1>false</Bool1>
+    <Bool2>false</Bool2>
+    <Bool3>false</Bool3>
+  </Object>
+  <Object>
+    <OName>Mario</OName>
+    <X>4</X>
+    <Y>1</Y>
     <Int1>0</Int1>
     <Int2>0</Int2>
     <Int3>0</Int3>
