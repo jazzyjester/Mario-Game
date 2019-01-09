@@ -1,7 +1,8 @@
 # Mario Objects
 
-![](https://github.com/jazzyjester/Mario-Objects/blob/master/mario1.png)
-![](https://github.com/jazzyjester/Mario-Objects/blob/master/mario2.png)
+![](https://github.com/jazzyjester/Mario-Objects/blob/master/mario_level_1.png)
+![](https://github.com/jazzyjester/Mario-Objects/blob/master/mario_level_2.png)
+![](https://github.com/jazzyjester/Mario-Objects/blob/master/mario_level_3.png)
 
 ##Introduction
 Mario Objects is a Mario game  + level editor created by me when I was at collage.
