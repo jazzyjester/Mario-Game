@@ -1,41 +1,59 @@
-# Mario Objects
+# 🎮 Mario Objects - Classic Mario Game & Level Editor 🎮
 
-![](https://github.com/jazzyjester/Mario-Objects/blob/master/mario_level_1.png)
-![](https://github.com/jazzyjester/Mario-Objects/blob/master/mario_level_2.png)
-![](https://github.com/jazzyjester/Mario-Objects/blob/master/mario_level_3.png)
+Welcome to **Mario Objects**! This is a Mario-inspired game and level editor that I created during my college days. It started as a small project to learn C# but grew into something much bigger as I added features and expanded my skills.
 
-## Introduction
-Mario Objects is a Mario game  + level editor created by me when I was at college.
-This was my first project I made in c# to learn the language.
-I started it as little project to learn how to use bitmaps and surfaces in c# and 
-because of my deep love with the mario game I decided to practice on mario sprites.
+---
 
-As time goes by I added more and more objects to the game , timers, mario phisics,
-intersections with other objects and its became a really nice projects so in addition
-I added to it a nice level editor to be able to create some type of levels.
+## 🖼️ Screenshots
+![Level 1](https://github.com/jazzyjester/Mario-Objects/blob/master/mario_level_1.png)
+![Level 2](https://github.com/jazzyjester/Mario-Objects/blob/master/mario_level_2.png)
+![Level 3](https://github.com/jazzyjester/Mario-Objects/blob/master/mario_level_3.png)
 
-Its not perfect and many parts of the game are not as they are supposed so be but as
-a result I was very proud of it.
+---
 
-## Content
+## ✨ Introduction
 
-The solution created in Visual Studio 2010 and contains 4 projects
-- **MarioObjects** - Main Game Project.
-- **MarioLevel Editor** - Level Editor Project.
-- **Mario Rectangle** - Simple tests project.
-- **Mario Test** - Simple Unit test project.
+**Mario Objects** is a tribute to the classic Mario games and my first project in C#. Initially, I set out to learn bitmap manipulation and surface handling, and Mario sprites seemed like the perfect practice material given my love for the game. 
 
-## Level Editor
+Over time, I added more:
+- **Objects** with distinct properties
+- **Timers** for gameplay mechanics
+- **Physics** for Mario’s movement
+- **Interactions** between Mario and other objects
 
-The level editor creates XML file that later will be loaded to the game and create all the objects for the game.
-All the objects that are available are on the left panel.
-Click on the same object will bring the properties screen if available.
-I know the UX is very bad, but thats what I thought on that time.
+As a finishing touch, I built a level editor to design and play around with custom Mario-inspired levels. While it’s not perfect, it was a fun and fulfilling project, and I’m still proud of it!
 
-![](https://github.com/jazzyjester/Mario-Objects/blob/master/mario3.png)
+---
 
+## 🛠️ Project Structure
 
-## Contact
-Write to me if you like the game  : jazzyjester@gmail.com
+This solution was built in Visual Studio 2010 and contains the following projects:
 
+- **MarioObjects** - The main game project.
+- **MarioLevel Editor** - A level editor to design custom levels.
+- **Mario Rectangle** - A simple test project.
+- **Mario Test** - A unit test project for basic functionality.
 
+---
+
+## 🎨 Level Editor
+
+The level editor lets you create custom levels by generating an XML file, which the game then loads to render your objects and designs.
+
+- Objects are listed on the left panel for easy selection.
+- Clicking an object opens a properties screen (if available).
+  
+> _Note:_ The UX is definitely "of its time," but it reflects my early approach to design!
+
+![Level Editor](https://github.com/jazzyjester/Mario-Objects/blob/master/mario3.png)
+
+---
+
+## 📬 Contact
+
+If you enjoy the game or have any questions, feel free to reach out!  
+**Email:** jazzyjester@gmail.com
+
+---
+
+Thanks for stopping by, and happy gaming! 🎉
