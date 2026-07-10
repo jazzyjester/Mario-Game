@@ -83,6 +83,11 @@ check items off, add session notes at the bottom, and commit.**
 - Engine quirks preserved on purpose: walkers only recognize grass/question tops as ground (jitter on solid),
   fireballs eaten by solid blocks, Mario always spawns bottom-left x=20 (XML Mario pos ignored, like the game),
   Enter is "sticky" until an exit is touched.
+- **Deliberate deviation from C# (session 2)**: the wall-climb bug is FIXED. Mario resolves
+  overlaps per axis right after each movement step (see `resolveHorizontalOverlap` /
+  `resolveVerticalOverlap` in Mario.swift); the legacy classifier then only sees flush
+  contacts, so its misclassifications (side-entry read as "landed on top") can't happen.
+  Hidden question blocks stay penetrable (excluded via `visible`).
 
 ### Phase 3 — Playable game app
 - [x] TCA `GameFeature`: `GameSession` box (identity+tick Equatable) holds `GameWorld`, 50ms clock timer
@@ -111,6 +116,31 @@ check items off, add session notes at the bottom, and commit.**
 - [x] New-level template (grass floor + Mario + exit), validation banner (one Mario, ≥1 exit) gates Play
 - [x] Menu "LEVEL EDITOR" button (⌘E); editor shortcuts ⌘N/⌘O/⌘S/⇧⌘S/⌘Z/⇧⌘Z/⌘P/esc
 - [x] Commit
+
+### Phase 5b — "Complete game" pass (2026-07-10, session 2)
+- [x] **Wall-climb bug fixed** (years-old legacy bug, deliberate deviation from C#):
+      axis-separated overlap resolution in Mario (vertical after the jump/fall step,
+      horizontal after the run/slide step) so the legacy corner classifier only sees
+      flush contacts; also fixes landing stutter at tile seams. Regression test:
+      `cannotClimbWallByJumpingAgainstIt`.
+- [x] Classic death sequence: engine `marioDying` phase (leap + fall through floor,
+      world frozen, 50 ticks), synthesized `death.wav` jingle, black "MARIO × N"
+      fade interstitial, then reload; 5 start lives.
+- [x] Title screen (sprite diorama, keyboard menu): NEW GAME / LEVEL SELECT /
+      LEVEL EDITOR / OPTIONS / ABOUT.
+- [x] Level select with locks; progress persisted via `@Shared(.appStorage)`
+      (`unlockedLevels`, completing bundled level N unlocks N+1).
+- [x] Options: sound + music toggles, persisted, split AudioPlayerClient.
+- [x] About screen (C# 2010 origin + Claude Code rewrite credit).
+- [x] Levels 4–8 generated (`MarioSwift/Scripts/make_levels.py`, design rules in
+      the script) with rising difficulty; LevelManager.xml lists 8 levels; music
+      alternates per level. Geometry proven completable by a runner bot test
+      (`LevelGeometryTests`; Level2 exempt — moving-platform void).
+- [x] Renderer review: engine-side culling (`renderables(visibleIn:)`), background
+      drawn as full sheet behind the clip (the old per-scroll crop grew the sprite
+      cache without bound). Pixel-identical output verified.
+- New debug flag: `--menu-screenshot out.png [main|levels|options|about]`;
+  `--screenshot` takes an optional level name.
 
 ### Phase 5 — Polish
 - [x] TCA reducer tests (TestStore): GameFeature death→reload/lives, game-over→backToMenu delegate,
@@ -144,3 +174,12 @@ check items off, add session notes at the bottom, and commit.**
   - **Next session**: finish Phase 5 leftovers (menu bar `.commands`, @Shared(.appStorage) persistence,
     app icon / .app bundle script), then Phase 6 fidelity/perf pass. Also worth: manual playthrough
     feedback from Ronny (jump feel, koopa shield timing) → tune against C# constants in Mario.swift.
+
+- **2026-07-10 (session 2)**: "Complete game" pass — see Phase 5b above. 51 tests green.
+  Fixed the legacy wall-climb bug (+ collision hardening), classic death sequence with
+  jingle + lives interstitial, real title screen with level select (locks, persisted
+  progress), options (sound/music, persisted), about screen, five generated levels
+  (4–8, runner-bot-verified geometry), renderer culling + bounded sprite cache.
+  - **Next session**: Phase 5 leftovers (native menu bar `.commands`, app icon /
+    .app bundle script), Phase 6 fidelity checklist, and Ronny's playthrough feedback
+    on the new levels' difficulty.
