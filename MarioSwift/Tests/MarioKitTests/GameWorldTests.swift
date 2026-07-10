@@ -59,12 +59,44 @@ struct GameWorldBasicsTests {
     ])
     let world = try GameWorld(level: level)
     var died = false
-    for _ in 0..<60 {
+    for _ in 0..<150 {
       world.advance(GameInput())
       if world.drainEvents().contains(.marioDied) { died = true }
     }
     #expect(died)
     #expect(world.finished)
+  }
+
+  @Test func deathPlaysLeapAnimationBeforeFinishing() throws {
+    // Kill Mario with a goomba right next to the spawn.
+    let world = try makeWorld(extra: [LevelObject(kind: .monsterGoomba, x: 3, y: 1)])
+
+    var events: [GameEvent] = []
+    for _ in 0..<100 where !world.marioDying {
+      world.advance(GameInput(right: true))
+      events += world.drainEvents()
+    }
+    // Death starts: jingle + dying event, but the world isn't finished yet.
+    #expect(world.marioDying)
+    #expect(!world.finished)
+    #expect(events.contains(.marioDying))
+    #expect(events.contains(.play(.death)))
+    #expect(!events.contains(.marioDied))
+
+    // The leap: Mario first rises, then falls below the level.
+    let deathY = world.mario.y
+    for _ in 0..<6 {
+      world.advance(GameInput())
+    }
+    #expect(world.mario.y < deathY)
+
+    for _ in 0..<50 where !world.finished {
+      world.advance(GameInput())
+      events += world.drainEvents()
+    }
+    #expect(world.finished)
+    #expect(events.contains(.marioDied))
+    #expect(world.mario.y > GameWorld.levelHeight)
   }
 }
 
@@ -290,7 +322,7 @@ struct MonsterTests {
   @Test func sideCollisionKillsSmallMario() throws {
     let world = try makeWorld(extra: [LevelObject(kind: .monsterGoomba, x: 4, y: 1)])
     var events: [GameEvent] = []
-    for _ in 0..<40 {
+    for _ in 0..<120 {  // contact + the ~50-tick death animation
       world.advance(GameInput(right: true))
       events += world.drainEvents()
     }

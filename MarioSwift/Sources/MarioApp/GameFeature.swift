@@ -33,6 +33,8 @@ struct GameFeature {
     }
 
     enum Overlay: Equatable {
+      /// The black interstitial after a death: "MARIO × lives".
+      case lives
       case gameOver
       case won
     }
@@ -66,6 +68,7 @@ struct GameFeature {
     case keyUp(HeldKey)
     case firePressed
     case enterPressed
+    case livesScreenFinished
     case overlayConfirmed
     case pauseToggled
     case restartTapped
@@ -112,6 +115,11 @@ struct GameFeature {
         state.pendingEnter = true
         return .none
 
+      case .livesScreenFinished:
+        guard state.overlay == .lives else { return .none }
+        state.overlay = nil
+        return reload(&state, levelIndex: state.levelIndex)
+
       case .overlayConfirmed:
         switch state.overlay {
         case .gameOver, .won:
@@ -119,7 +127,7 @@ struct GameFeature {
             .run { _ in await audioPlayer.stopMusic() },
             .send(.delegate(state.launchedFromEditor ? .backToEditor : .backToMenu))
           )
-        case nil:
+        case .lives, nil:
           return .none
         }
 
@@ -128,6 +136,8 @@ struct GameFeature {
         return .none
 
       case .restartTapped:
+        // Restarting mid-death-animation would skip the life loss.
+        guard !state.session.world.marioDying else { return .none }
         return reload(&state, levelIndex: state.levelIndex)
 
       case .task:
@@ -171,12 +181,22 @@ struct GameFeature {
       case .extraLife:
         state.lives += 1
 
+      case .marioDying:
+        // The engine freezes and plays the death animation; the jingle is a
+        // regular `.play(.death)` event. Just cut the music.
+        effects.append(.run { _ in await audioPlayer.stopMusic() })
+
       case .marioDied:
         state.lives -= 1
         if state.lives <= 0 {
           state.overlay = .gameOver
         } else {
-          effects.append(reload(&state, levelIndex: state.levelIndex))
+          state.overlay = .lives
+          effects.append(
+            .run { send in
+              try await clock.sleep(for: .seconds(2))
+              await send(.livesScreenFinished)
+            })
         }
 
       case .levelCompleted:
@@ -206,14 +226,13 @@ struct GameFeature {
       return .send(.delegate(state.launchedFromEditor ? .backToEditor : .backToMenu))
     }
 
-    let previousIndex = state.levelIndex
     state.session = session
     state.levelIndex = levelIndex
     state.heldKeys = []
     state.pendingFire = false
     state.pendingEnter = false
 
-    guard previousIndex != levelIndex else { return .none }
+    // Always restart the music: a death reload stopped it for the jingle.
     let music = levelIndex == 0 ? "level1.mp3" : "level2.mp3"
     return .run { _ in await audioPlayer.playMusic(music) }
   }

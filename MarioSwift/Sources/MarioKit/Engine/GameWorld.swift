@@ -9,12 +9,16 @@ public enum SoundEffect: String, Equatable, Sendable, CaseIterable {
   case brick = "brick.wav"
   case block = "block.wav"
   case fireball = "fireball.wav"
+  case death = "death.wav"
 }
 
 public enum GameEvent: Equatable, Sendable {
   case play(SoundEffect)
   case extraLife
   case levelCompleted
+  /// Mario was just killed: the death animation (leap up, fall through the
+  /// floor) starts now, `marioDied` follows once it finishes.
+  case marioDying
   case marioDied
 }
 
@@ -76,6 +80,11 @@ public final class GameWorld {
   public private(set) var tickCount = 0
   /// Set once Mario dies or finishes the level; the world stops advancing.
   public private(set) var finished = false
+  /// True while the death animation plays: Mario leaps up and falls through
+  /// the floor, everything else freezes (classic platformer death). Ends
+  /// with `finished = true` and a `.marioDied` event.
+  public private(set) var marioDying = false
+  private var deathTicks = 0
 
   enum TimerSlot: CaseIterable { case t50, t100, t200, t500 }
   private var handlers: [TimerSlot: [(GameWorld) -> Void]] = [:]
@@ -163,6 +172,19 @@ public final class GameWorld {
   public func advance(_ input: GameInput) {
     guard !finished else { return }
 
+    if marioDying {
+      // Death animation: only Mario's leap-and-fall runs; input is ignored,
+      // monsters and timers freeze, the camera stays put.
+      tickCount += 1
+      deathTicks += 1
+      mario.deathFallTick()
+      if deathTicks >= 50 {  // 2.5s — matches the death jingle
+        finished = true
+        emit(.marioDied)
+      }
+      return
+    }
+
     apply(input)
     run(.t50)
     tickCount += 1
@@ -207,9 +229,11 @@ public final class GameWorld {
   }
 
   func marioDied() {
-    guard !finished else { return }
-    finished = true
-    emit(.marioDied)
+    guard !finished, !marioDying else { return }
+    marioDying = true
+    mario.beginDeathLeap()
+    play(.death)
+    emit(.marioDying)
   }
 
   func levelCompleted() {

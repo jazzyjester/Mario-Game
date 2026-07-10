@@ -100,6 +100,28 @@ public final class Mario: AnimatedEntity {
     world.marioDied()
   }
 
+  // MARK: Death animation
+
+  /// Start the classic death leap: a small hop straight up, then a fall
+  /// through the floor. Driven by `deathFallTick` while the world is in its
+  /// `marioDying` phase.
+  func beginDeathLeap() {
+    moveState = .none
+    moving = false
+    blinking = false
+    blinkingShow = true
+    imageIndex = facing == .left ? 4 : 5  // jump pose
+    jumpState = .up
+    timeCount = 0
+    startPosition = Double(y)
+    startVelocity = -20
+  }
+
+  func deathFallTick() {
+    timeCount += 350.0 / 1000.0
+    y = Int(startPosition + startVelocity * timeCount + 4.9 * timeCount * timeCount)
+  }
+
   func setProperties() {
     switch powerUp {
     case .small:

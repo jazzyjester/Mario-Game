@@ -24,22 +24,28 @@ private let voidLevel = LevelDocument(objects: [
 @MainActor
 @Suite("GameFeature flows")
 struct GameFeatureTests {
-  @Test func deathReloadsLevelWithOneFewerLife() async throws {
+  @Test func deathShowsLivesScreenThenReloadsWithOneFewerLife() async throws {
     let initialState = try GameFeature.State(
       levelIndex: 0, levelNames: [], lives: 3, customLevel: voidLevel)
     let store = TestStore(initialState: initialState) {
       GameFeature()
+    } withDependencies: {
+      $0.continuousClock = ImmediateClock()
     }
     store.exhaustivity = .off
     let originalSessionID = store.state.session.id
 
-    // Mario free-falls into the void; ~10 ticks to pass the death line.
+    // Mario free-falls into the void (~10 ticks to pass the death line),
+    // then the ~50-tick death animation plays before the life is lost.
     // Stop at the first death — the reloaded level is just as deadly.
-    for _ in 0..<30 where store.state.lives == 3 {
+    for _ in 0..<150 where store.state.lives == 3 {
       await store.send(.tick)
     }
 
+    // The black "MARIO × 2" interstitial is up; its timer then reloads.
     #expect(store.state.lives == 2)
+    #expect(store.state.overlay == .lives)
+    await store.receive(\.livesScreenFinished)
     #expect(store.state.overlay == nil)
     // A fresh world was created for the reload.
     #expect(store.state.session.id != originalSessionID)
@@ -51,10 +57,12 @@ struct GameFeatureTests {
       levelIndex: 0, levelNames: [], lives: 1, customLevel: voidLevel)
     let store = TestStore(initialState: initialState) {
       GameFeature()
+    } withDependencies: {
+      $0.continuousClock = ImmediateClock()
     }
     store.exhaustivity = .off
 
-    for _ in 0..<30 {
+    for _ in 0..<150 where store.state.overlay == nil {
       await store.send(.tick)
     }
     #expect(store.state.lives == 0)

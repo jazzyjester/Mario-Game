@@ -19,6 +19,7 @@ struct GameView: View {
 
       if let overlay = store.overlay {
         overlayView(overlay)
+          .transition(.opacity)
       } else if store.paused {
         Text("PAUSED")
           .font(.system(size: 32, weight: .heavy, design: .monospaced))
@@ -26,6 +27,7 @@ struct GameView: View {
           .shadow(radius: 4)
       }
     }
+    .animation(.easeInOut(duration: 0.6), value: store.overlay)
     .task { await store.send(.task).finish() }
     .modifier(
       GameKeyHandling(
@@ -51,18 +53,42 @@ struct GameView: View {
     }
   }
 
+  /// Full-screen black interstitials, like the classic game's own screens.
   private func overlayView(_ overlay: GameFeature.State.Overlay) -> some View {
-    VStack(spacing: 16) {
-      Text(overlay == .won ? "YOU WON!" : "GAME OVER")
-        .font(.system(size: 36, weight: .heavy, design: .monospaced))
-        .foregroundStyle(.white)
-      Button(store.launchedFromEditor ? "Back to Editor" : "Back to Menu") {
-        store.send(.overlayConfirmed)
+    ZStack {
+      Color.black
+      switch overlay {
+      case .lives:
+        HStack(spacing: 20) {
+          marioSprite
+          Text("× \(store.lives)")
+            .font(.system(size: 30, weight: .heavy, design: .monospaced))
+            .foregroundStyle(.white)
+        }
+
+      case .gameOver, .won:
+        VStack(spacing: 24) {
+          Text(overlay == .won ? "YOU WON!" : "GAME OVER")
+            .font(.system(size: 36, weight: .heavy, design: .monospaced))
+            .foregroundStyle(.white)
+          Button(store.launchedFromEditor ? "Back to Editor" : "Back to Menu") {
+            store.send(.overlayConfirmed)
+          }
+          .keyboardShortcut(.defaultAction)
+        }
       }
-      .keyboardShortcut(.defaultAction)
     }
-    .padding(32)
-    .background(.black.opacity(0.75), in: RoundedRectangle(cornerRadius: 12))
+  }
+
+  /// Small Mario, standing frame, pixel-scaled up.
+  private var marioSprite: some View {
+    Group {
+      if let image = SpriteStore.shared.frame(
+        .marioSmall, source: IRect(x: 32, y: 0, width: 16, height: 16))
+      {
+        image.resizable().interpolation(.none).frame(width: 48, height: 48)
+      }
+    }
   }
 
   /// Returns true when the key was handled (suppresses the system beep).
