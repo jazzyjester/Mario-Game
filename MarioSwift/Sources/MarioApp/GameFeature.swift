@@ -26,6 +26,8 @@ struct GameFeature {
     var launchedFromEditor = false
     /// The editor's document, replayed when launched from the editor.
     var customLevel: LevelDocument?
+    /// Persisted progression: completing bundled level N unlocks N+1.
+    @Shared(.unlockedLevels) var unlockedLevels: Int
 
     var levelName: String {
       guard levelNames.indices.contains(levelIndex) else { return "Custom Level" }
@@ -202,10 +204,14 @@ struct GameFeature {
       case .levelCompleted:
         if state.customLevel != nil {
           state.overlay = .won
-        } else if state.levelIndex + 1 < state.levelNames.count {
-          effects.append(reload(&state, levelIndex: state.levelIndex + 1))
         } else {
-          state.overlay = .won
+          let unlocked = min(state.levelNames.count, state.levelIndex + 2)
+          state.$unlockedLevels.withLock { $0 = max($0, unlocked) }
+          if state.levelIndex + 1 < state.levelNames.count {
+            effects.append(reload(&state, levelIndex: state.levelIndex + 1))
+          } else {
+            state.overlay = .won
+          }
         }
       }
     }

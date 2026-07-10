@@ -151,16 +151,80 @@ struct AppFeatureTests {
     #expect(store.state.editor != nil)
   }
 
-  @Test func playStartsSelectedLevel() async {
-    var state = AppFeature.State()
-    state.selectedLevelIndex = 1
+  @Test func newGameStartsLevelOneWithFiveLives() async {
+    let store = TestStore(initialState: AppFeature.State()) {
+      AppFeature()
+    }
+    store.exhaustivity = .off
+
+    await store.send(.newGameTapped)
+    #expect(store.state.game?.levelIndex == 0)
+    #expect(store.state.game?.lives == 5)
+  }
+
+  @Test func lockedLevelCannotBeSelected() async {
+    let state = AppFeature.State()
+    state.$unlockedLevels.withLock { $0 = 1 }
     let store = TestStore(initialState: state) {
       AppFeature()
     }
     store.exhaustivity = .off
 
-    await store.send(.playTapped)
+    // Level 2 (index 1) is locked: selecting it does nothing.
+    await store.send(.levelSelected(1))
+    #expect(store.state.game == nil)
+
+    // Unlock it (as completing level 1 would), now it starts.
+    state.$unlockedLevels.withLock { $0 = 2 }
+    await store.send(.levelSelected(1))
     #expect(store.state.game?.levelIndex == 1)
     #expect(store.state.game?.levelName == "Level2.xml")
+  }
+
+  @Test func completingBundledLevelUnlocksTheNext() async throws {
+    let initialState = try GameFeature.State(
+      levelIndex: 0, levelNames: ["lev1.xml", "Level2.xml", "Level3.xml"], lives: 5)
+    initialState.$unlockedLevels.withLock { $0 = 1 }
+    var state = initialState
+    state.session = try GameSession(
+      level: LevelDocument(objects: [
+        LevelObject(kind: .mario, x: 1, y: 1),
+        LevelObject(kind: .blockGrass, x: 1, y: 0),
+        LevelObject(kind: .blockGrass, x: 2, y: 0),
+        LevelObject(kind: .exit, x: 2, y: 1),
+      ]))
+
+    let store = TestStore(initialState: state) {
+      GameFeature()
+    }
+    store.exhaustivity = .off
+
+    await store.send(.keyDown(.right))
+    for _ in 0..<10 {
+      await store.send(.enterPressed)
+      await store.send(.tick)
+    }
+
+    #expect(store.state.levelIndex == 1)
+    #expect(store.state.unlockedLevels == 2)
+  }
+
+  @Test func togglesPersistSettings() async {
+    let store = TestStore(initialState: AppFeature.State()) {
+      AppFeature()
+    }
+    store.exhaustivity = .off
+    #expect(store.state.soundEnabled)
+    #expect(store.state.musicEnabled)
+
+    await store.send(.soundToggled)
+    await store.send(.musicToggled)
+    #expect(!store.state.soundEnabled)
+    #expect(!store.state.musicEnabled)
+
+    // A fresh state (new app run) sees the same persisted values.
+    let rebooted = AppFeature.State()
+    #expect(!rebooted.soundEnabled)
+    #expect(!rebooted.musicEnabled)
   }
 }

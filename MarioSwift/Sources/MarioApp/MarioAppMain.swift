@@ -24,6 +24,17 @@ struct MarioAppMain: App {
       }
       exit(0)
     }
+    if let flagIndex = CommandLine.arguments.firstIndex(of: "--menu-screenshot"),
+      CommandLine.arguments.count > flagIndex + 1
+    {
+      let path = CommandLine.arguments[flagIndex + 1]
+      let screen = CommandLine.arguments.count > flagIndex + 2
+        ? CommandLine.arguments[flagIndex + 2] : "main"
+      MainActor.assumeIsolated {
+        renderMenuScreenshot(to: path, screen: screen)
+      }
+      exit(0)
+    }
     if let flagIndex = CommandLine.arguments.firstIndex(of: "--editor-screenshot"),
       CommandLine.arguments.count > flagIndex + 1
     {
@@ -52,12 +63,15 @@ struct AppView: View {
   @Bindable var store: StoreOf<AppFeature>
 
   var body: some View {
-    if let gameStore = store.scope(state: \.game, action: \.game.presented) {
-      GameView(store: gameStore)
-    } else if let editorStore = store.scope(state: \.editor, action: \.editor.presented) {
-      EditorView(store: editorStore)
-    } else {
-      MenuView(store: store)
+    Group {
+      if let gameStore = store.scope(state: \.game, action: \.game.presented) {
+        GameView(store: gameStore)
+      } else if let editorStore = store.scope(state: \.editor, action: \.editor.presented) {
+        EditorView(store: editorStore)
+      } else {
+        MenuView(store: store)
+      }
     }
+    .task { await store.send(.task).finish() }
   }
 }

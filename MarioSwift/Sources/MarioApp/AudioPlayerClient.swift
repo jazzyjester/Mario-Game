@@ -8,7 +8,8 @@ struct AudioPlayerClient {
   var playEffect: @Sendable (SoundEffect) async -> Void
   var playMusic: @Sendable (_ fileName: String) async -> Void
   var stopMusic: @Sendable () async -> Void
-  var setEnabled: @Sendable (Bool) async -> Void
+  var setSoundEnabled: @Sendable (Bool) async -> Void
+  var setMusicEnabled: @Sendable (Bool) async -> Void
 }
 
 extension AudioPlayerClient: DependencyKey {
@@ -18,7 +19,8 @@ extension AudioPlayerClient: DependencyKey {
       playEffect: { await engine.play($0) },
       playMusic: { await engine.playMusic($0) },
       stopMusic: { await engine.stopMusic() },
-      setEnabled: { await engine.setEnabled($0) }
+      setSoundEnabled: { await engine.setSoundEnabled($0) },
+      setMusicEnabled: { await engine.setMusicEnabled($0) }
     )
   }()
 
@@ -26,7 +28,8 @@ extension AudioPlayerClient: DependencyKey {
     playEffect: { _ in },
     playMusic: { _ in },
     stopMusic: {},
-    setEnabled: { _ in }
+    setSoundEnabled: { _ in },
+    setMusicEnabled: { _ in }
   )
 }
 
@@ -40,19 +43,24 @@ extension DependencyValues {
 private actor AudioEngine {
   private var effectPlayers: [SoundEffect: AVAudioPlayer] = [:]
   private var musicPlayer: AVAudioPlayer?
-  private var enabled = true
+  private var soundEnabled = true
+  private var musicEnabled = true
 
-  func setEnabled(_ enabled: Bool) {
-    self.enabled = enabled
+  func setSoundEnabled(_ enabled: Bool) {
+    soundEnabled = enabled
+  }
+
+  func setMusicEnabled(_ enabled: Bool) {
+    musicEnabled = enabled
     if !enabled {
-      musicPlayer?.stop()
+      musicPlayer?.pause()
     } else {
       musicPlayer?.play()
     }
   }
 
   func play(_ effect: SoundEffect) {
-    guard enabled else { return }
+    guard soundEnabled else { return }
     let player: AVAudioPlayer
     if let cached = effectPlayers[effect] {
       player = cached
@@ -78,7 +86,7 @@ private actor AudioEngine {
     player.numberOfLoops = -1
     player.volume = 1
     musicPlayer = player
-    if enabled {
+    if musicEnabled {
       player.play()
     }
   }
