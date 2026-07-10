@@ -85,13 +85,20 @@ check items off, add session notes at the bottom, and commit.**
   Enter is "sticky" until an exit is touched.
 
 ### Phase 3 — Playable game app
-- [ ] TCA `GameFeature`: holds `GameWorld`, tick driven by clock effect, input actions
-- [ ] SwiftUI `GameView`: `Canvas` renderer (sprites, camera, parallax bg, HUD: lives/coins), keyboard handling
-- [ ] Sprite loading from bundle resources, sliced frames, nearest-neighbor
-- [ ] `AudioPlayer` dependency (AVFoundation): sfx + looping level music
-- [ ] `AppFeature` + menu screen (Play / Editor / level picker), death/game-over/level-complete flows
-- [ ] Playable end-to-end on the 3 legacy levels via `swift run MarioApp` — commit
-- [ ] README quickstart in `MarioSwift/`
+- [x] TCA `GameFeature`: `GameSession` box (identity+tick Equatable) holds `GameWorld`, 50ms clock timer
+      effect sends `.tick`, held-key set + fire/enter edge flags → `GameInput`
+- [x] SwiftUI `GameView`: Canvas renderer (draw commands resolved outside the canvas closure —
+      SpriteStore is MainActor), parallax bg, text HUD, pause/game-over/won overlays
+- [x] `SpriteStore` (CGImage crops cached per source rect, `.interpolation(.none)`)
+- [x] `AudioPlayerClient` @DependencyClient (AVFoundation actor: effect players + looping music)
+- [x] `AppFeature` (menu ↔ game via @Presents/ifLet), menu with level picker; death reloads level
+      (lives−1), game over at 0 lives, next level on completion, won overlay after last level
+- [x] Verified: renders lev1 correctly (offscreen screenshots at tick 0/40 — camera, parallax,
+      sprites, koopa/goombas all correct); app runs via `swift run MarioApp`
+- [x] README quickstart in `MarioSwift/`
+- [x] Debug tool: `swift run MarioApp --screenshot out.png [ticks]` renders a frame headlessly
+- Note: GameFeature/AppFeature delegate cases already support `launchedFromEditor`/`customLevel`
+  for Phase 4's "Play level" button.
 
 ### Phase 4 — Level editor
 - [ ] TCA `EditorFeature`: document state, palette selection, place/erase on grid, drag-paint,
