@@ -14,3 +14,7 @@ UpgradeLog.XML
 /MarioObjects/bin/Debug/MarioObjects.vshost.exe
 /MarioObjects/bin/Debug/MarioObjects.vshost.exe.manifest
 /.vs/MarioObjects/v14/.suo
+
+# Swift rewrite
+MarioSwift/.build/
+.DS_Store

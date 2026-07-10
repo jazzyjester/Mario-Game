@@ -55,16 +55,18 @@ check items off, add session notes at the bottom, and commit.**
 ### Phase 0 — Foundation
 - [x] Explore legacy code, write this plan
 - [x] Branch `swift-rewrite`, git identity set, commit plan
-- [ ] Scaffold `MarioSwift` SwiftPM package: `MarioKit` lib + `MarioApp` exe + test target, TCA dependency
-- [ ] Copy assets into package resources (Images, Sounds, Levels incl. LevelManager.xml)
-- [ ] `swift build` + `swift test` green — commit
+- [x] Scaffold `MarioSwift` SwiftPM package: `MarioKit` lib + `MarioApp` exe + test target, TCA dependency
+- [x] Copy assets into package resources (Images, Sounds, Levels incl. LevelManager.xml)
+- [x] `swift build` + `swift test` green — commit
+  - **NOTE**: run tests with `MarioSwift/Scripts/test.sh` — plain `swift test` fails on this machine
+    (CLT-only; the script adds the CLT's Testing.framework search paths + rpaths).
 
 ### Phase 1 — Level model & legacy XML codec
-- [ ] `ObjectKind` enum (all legacy ONames), `LevelObject` (kind, gridX, gridY, ints, bools), `LevelDocument`
-- [ ] Legacy XML decode + encode (round-trip compatible so the old game could still load saved files)
-- [ ] Load all 3 shipped levels in tests; assert object counts / spot-check positions
-- [ ] `LevelCatalog` (parse LevelManager.xml)
-- [ ] Commit
+- [x] `ObjectKind` enum (all legacy ONames), `LevelObject` (kind, gridX, gridY, ints, bools), `LevelDocument`
+- [x] Legacy XML decode + encode (round-trip compatible so the old game could still load saved files)
+- [x] Load all 3 shipped levels in tests (lev1=254, Level2=70, Level3=44 objects; 1 Mario + ≥1 Exit each)
+- [x] `LevelCatalog` (parse LevelManager.xml)
+- [x] Commit
 
 ### Phase 2 — Game engine (pure MarioKit)
 - [ ] `GameWorld` struct: entities instantiated from `LevelDocument`, fixed-tick `advance(input:)`
