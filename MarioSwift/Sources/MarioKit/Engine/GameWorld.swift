@@ -306,7 +306,19 @@ public final class GameWorld {
   // MARK: Rendering
 
   /// Draw commands for all currently-drawn entities, in legacy draw order.
-  public func renderables() -> [Renderable] {
-    objects.compactMap { $0.renderable() }
+  /// Pass the camera viewport (level pixel coordinates) to cull off-screen
+  /// entities before draw commands are built.
+  public func renderables(visibleIn viewport: IRect? = nil) -> [Renderable] {
+    objects.compactMap { entity in
+      guard let renderable = entity.renderable() else { return nil }
+      if let viewport {
+        let dest = renderable.dest
+        guard
+          dest.x < viewport.maxX, dest.maxX > viewport.x,
+          dest.y < viewport.maxY, dest.maxY > viewport.y
+        else { return nil }
+      }
+      return renderable
+    }
   }
 }

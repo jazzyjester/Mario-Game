@@ -148,29 +148,41 @@ struct GameCanvas: View {
     var commands: [(Image, CGRect)] = []
 
     // Parallax background: the legacy pipeline composed two offsets — the
-    // 1/3-speed scroll and the background/output screen delta.
-    let bgSource = IRect(
-      x: (screen.output.x - screen.background.x) + screen.output.x / 3,
-      y: (GameWorld.levelHeight - Int(viewHeight))
-        - (screen.output.y - screen.background.y) - screen.output.y / 3,
-      width: Int(viewWidth),
-      height: Int(viewHeight)
-    )
-    if let bg = store.frame(.background, source: clamped(bgSource, to: SpriteSheet.background)) {
-      commands.append((bg, CGRect(x: 0, y: 0, width: viewWidth, height: viewHeight)))
+    // 1/3-speed scroll and the background/output screen delta. Drawn as the
+    // whole sheet shifted behind the clip (a per-scroll-position crop would
+    // grow the sprite cache without bound).
+    let bgSheet = SpriteSheet.background
+    let bgSource = clamped(
+      IRect(
+        x: (screen.output.x - screen.background.x) + screen.output.x / 3,
+        y: (GameWorld.levelHeight - Int(viewHeight))
+          - (screen.output.y - screen.background.y) - screen.output.y / 3,
+        width: Int(viewWidth),
+        height: Int(viewHeight)
+      ), to: bgSheet)
+    let bgFull = IRect(x: 0, y: 0, width: bgSheet.size.width, height: bgSheet.size.height)
+    if let bg = store.frame(bgSheet, source: bgFull) {
+      commands.append(
+        (
+          bg,
+          CGRect(
+            x: CGFloat(-bgSource.x), y: CGFloat(-bgSource.y),
+            width: CGFloat(bgSheet.size.width), height: CGFloat(bgSheet.size.height)
+          )
+        ))
     }
 
+    // Entities: culled against the camera viewport inside the engine.
     let cameraX = screen.output.x
     let cameraY = screen.viewTopY
-    for renderable in world.renderables() {
+    let viewport = IRect(x: cameraX, y: cameraY, width: Int(viewWidth), height: Int(viewHeight))
+    for renderable in world.renderables(visibleIn: viewport) {
       let dest = CGRect(
         x: CGFloat(renderable.dest.x - cameraX),
         y: CGFloat(renderable.dest.y - cameraY),
         width: CGFloat(renderable.dest.width),
         height: CGFloat(renderable.dest.height)
       )
-      guard dest.maxX >= 0, dest.minX <= viewWidth, dest.maxY >= 0, dest.minY <= viewHeight
-      else { continue }
       if let image = store.frame(renderable.sheet, source: renderable.source) {
         commands.append((image, dest))
       }
