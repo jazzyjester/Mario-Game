@@ -117,6 +117,26 @@ struct MarioMovementTests {
     #expect(world.mario.x == 64 - world.mario.width)
   }
 
+  @Test func cannotClimbWallByJumpingAgainstIt() throws {
+    // The years-old legacy bug: repeatedly jumping against a tall wall let
+    // Mario climb it — a sideways step into a block just below its top edge
+    // was classified as "landed on top", teleporting him up the wall face.
+    // Wall column at grid x=6 (left edge 96px), 8 tiles high (top at 320px)
+    // — unclearable, the jump apex leaves Mario's bottom at ~375px.
+    let wall = (1...8).map { LevelObject(kind: .blockBrick, x: 6, y: $0) }
+    let world = try makeWorld(ground: .blockGrass, extra: wall)
+
+    for tick in 0..<600 {
+      world.advance(GameInput(right: true, jump: true))
+      if world.mario.x > 96 - world.mario.width {
+        Issue.record(
+          "Mario entered the wall at tick \(tick): x=\(world.mario.x), y=\(world.mario.y)")
+        return
+      }
+    }
+    #expect(!world.finished)
+  }
+
   @Test func jumpRisesAndLandsBack() throws {
     let world = try makeWorld()
     let groundY = world.mario.y

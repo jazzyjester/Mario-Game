@@ -170,10 +170,59 @@ public final class Mario: AnimatedEntity {
 
   // MARK: Collision response
 
-  /// Any brick/solid block hit on the given side during the last pass?
+  /// Block kinds that are solid for Mario's movement. Exits are passable;
+  /// hidden question blocks are excluded via their `visible` flag until hit.
+  static let wallKinds: Set<EntityKind> = [
+    .grass, .solidBlock, .ground1, .brick, .pipeUp,
+    .blockQuestion, .blockQuestionHidden, .movingBlock,
+  ]
+
+  /// Any solid block hit on the given side during the last pass? Legacy
+  /// direction names: a `.left` collision is a wall against Mario's RIGHT
+  /// side (it pushes him left), and vice versa.
   func touchesWall(_ side: CollisionDirection) -> Bool {
     hits.contains { hit in
-      (hit.other.kind == .brick || hit.other.kind == .solidBlock) && hit.collision.dir == side
+      Mario.wallKinds.contains(hit.other.kind) && hit.collision.dir == side
+    }
+  }
+
+  /// Deliberate fix over the legacy engine (the "climb over walls" bug):
+  /// resolve each movement axis immediately after its position step, so the
+  /// collision pass only ever sees flush contacts. The legacy classifier
+  /// misread a sideways step into a block just below its top edge as "landed
+  /// on top" (and a deep fall across a tile seam as a side hit), because
+  /// movement used to run unchecked before classification. Flush contacts
+  /// still register (containment is edge-inclusive), so all the gameplay
+  /// callbacks — landing, head bumps, wall stops — keep firing.
+  func resolveHorizontalOverlap(movedBy dx: Int, world: GameWorld) {
+    guard dx != 0 else { return }
+    for block in world.objects where block !== self && block.visible {
+      guard Mario.wallKinds.contains(block.kind) else { continue }
+      let b = block.rect
+      let r = rect
+      guard r.x < b.maxX, r.maxX > b.x, r.y < b.maxY, r.maxY > b.y else { continue }
+      if dx > 0 {
+        if r.maxX - b.x <= dx { x = b.x - width }
+      } else {
+        if b.maxX - r.x <= -dx { x = b.maxX }
+      }
+    }
+  }
+
+  func resolveVerticalOverlap(movedBy dy: Int, world: GameWorld) {
+    guard dy != 0 else { return }
+    for block in world.objects where block !== self && block.visible {
+      guard Mario.wallKinds.contains(block.kind) else { continue }
+      let b = block.rect
+      let r = rect
+      guard r.x < b.maxX, r.maxX > b.x, r.y < b.maxY, r.maxY > b.y else { continue }
+      if dy > 0 {
+        // Falling: land flush on the block top we crossed this step.
+        if r.maxY - b.y <= dy { y = b.y - height }
+      } else {
+        // Rising: stop flush under the block bottom (head bump).
+        if b.maxY - r.y <= -dy { y = b.maxY }
+      }
     }
   }
 
@@ -341,11 +390,13 @@ public final class Mario: AnimatedEntity {
       timeCount += 350.0 / 1000.0
       oldPosition = currentPosition
       currentPosition = startPosition + startVelocity * timeCount + 4.9 * timeCount * timeCount
+      let previousY = y
       if jumpState == .up {
         y = Int(currentPosition)
       } else {
         y += 6 + Int(timeCount)
       }
+      resolveVerticalOverlap(movedBy: y - previousY, world: world)
 
       world.updateScreensY()
 
@@ -371,13 +422,15 @@ public final class Mario: AnimatedEntity {
       if xAdd < 3 {
         xAdd += 0.5
       }
-      // Note the legacy left/right swap: `.left` collisions are walls on
-      // Mario's right side, and vice versa.
-      if !touchesWall(.right) {
-        if moveState == .right { x += 3 + Int(xAdd) }
+      if moveState == .right && !touchesWall(.left) {
+        let step = 3 + Int(xAdd)
+        x += step
+        resolveHorizontalOverlap(movedBy: step, world: world)
       }
-      if !touchesWall(.left) {
-        if moveState == .left { x -= 3 + Int(xAdd) }
+      if moveState == .left && !touchesWall(.right) {
+        let step = 3 + Int(xAdd)
+        x -= step
+        resolveHorizontalOverlap(movedBy: -step, world: world)
       }
     }
 
@@ -387,8 +440,14 @@ public final class Mario: AnimatedEntity {
       world.updateScreensX()
 
       xCount = xCount.squareRoot()
-      if facing == .right { x += Int(xCount) }
-      if facing == .left { x -= Int(xCount) }
+      if facing == .right {
+        x += Int(xCount)
+        resolveHorizontalOverlap(movedBy: Int(xCount), world: world)
+      }
+      if facing == .left {
+        x -= Int(xCount)
+        resolveHorizontalOverlap(movedBy: -Int(xCount), world: world)
+      }
 
       if xCount < 1.05 {  // standing
         moveState = .none
