@@ -19,8 +19,10 @@ struct MarioAppMain: App {
       let path = CommandLine.arguments[flagIndex + 1]
       let ticks = CommandLine.arguments.count > flagIndex + 2
         ? Int(CommandLine.arguments[flagIndex + 2]) ?? 0 : 0
+      let level = CommandLine.arguments.count > flagIndex + 3
+        ? CommandLine.arguments[flagIndex + 3] : "lev1.xml"
       MainActor.assumeIsolated {
-        renderGameScreenshot(to: path, ticks: ticks)
+        renderGameScreenshot(to: path, ticks: ticks, level: level)
       }
       exit(0)
     }

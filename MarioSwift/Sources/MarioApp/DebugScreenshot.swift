@@ -3,13 +3,13 @@ import ComposableArchitecture
 import MarioKit
 import SwiftUI
 
-/// Renders one frame of lev1 (after `ticks` ticks of hold-right input) to a
-/// PNG. Debug aid for verifying the renderer headlessly:
-/// `swift run MarioApp --screenshot /tmp/frame.png 40`
+/// Renders one frame of a level (after `ticks` ticks of hold-right input) to
+/// a PNG. Debug aid for verifying the renderer headlessly:
+/// `swift run MarioApp --screenshot /tmp/frame.png 40 Level5.xml`
 @MainActor
-func renderGameScreenshot(to path: String, ticks: Int) {
+func renderGameScreenshot(to path: String, ticks: Int, level: String = "lev1.xml") {
   do {
-    var session = try GameSession(level: BundledAssets.level(named: "lev1.xml"))
+    var session = try GameSession(level: BundledAssets.level(named: level))
     for tick in 0..<ticks {
       _ = session.advance(GameInput(right: true, jump: tick % 31 < 8))
     }

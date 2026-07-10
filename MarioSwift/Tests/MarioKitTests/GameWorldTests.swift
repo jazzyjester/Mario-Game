@@ -386,9 +386,83 @@ struct MonsterTests {
   }
 }
 
+@Suite("Level geometry")
+struct LevelGeometryTests {
+  /// Every listed level's *geometry* must be completable by a simple
+  /// "run right, jump over walls and pits" runner once monsters are stripped
+  /// (a player can dodge monsters; the terrain itself must never dead-end).
+  /// This guards the generated levels 4–8 and the design rules they follow
+  /// (pits ≤ 4 tiles, climbs ≤ 4 tiles, no ceilings over required jumps).
+  /// Level2 is exempt: its whole right half is a void crossed on moving
+  /// platforms, beyond a simple runner (covered by the smoke test instead).
+  @Test(arguments: [
+    "lev1.xml", "Level3.xml", "Level4.xml",
+    "Level5.xml", "Level6.xml", "Level7.xml", "Level8.xml",
+  ])
+  func geometryIsCompletable(name: String) throws {
+    var document = try BundledAssets.level(named: name)
+    document.objects.removeAll {
+      $0.kind == .monsterGoomba || $0.kind == .monsterKoopa
+    }
+    document.objects = document.objects.map { object in
+      var object = object
+      if object.kind == .blockPipeUp { object.ints[0] = 0 }  // no piranhas
+      return object
+    }
+
+    let world = try GameWorld(level: document)
+    var completed = false
+    for _ in 0..<6000 {
+      world.advance(GameInput(right: true, jump: shouldJump(world), enter: true))
+      if world.drainEvents().contains(.levelCompleted) {
+        completed = true
+        break
+      }
+      if world.finished { break }  // fell into a pit: geometry failed
+    }
+    #expect(
+      completed,
+      "runner failed in \(name) at x=\(world.mario.x), y=\(world.mario.y), died=\(world.finished)")
+  }
+
+  /// A competent runner: jump when a wall blocks the path or a pit opens
+  /// just ahead, otherwise keep feet on the ground.
+  private func shouldJump(_ world: GameWorld) -> Bool {
+    let mario = world.mario!
+    let rect = mario.rect
+    let walls: Set<EntityKind> = [
+      .grass, .solidBlock, .ground1, .brick, .pipeUp, .blockQuestion, .movingBlock,
+    ]
+    let solids = world.objects.filter { $0.visible && walls.contains($0.kind) }
+
+    // A wall at body height within 24px ahead?
+    let wallAhead = solids.contains { block in
+      let b = block.rect
+      return b.x >= rect.maxX - 4 && b.x <= rect.maxX + 24
+        && b.y < rect.maxY && b.maxY > rect.y
+    }
+    if wallAhead { return true }
+
+    // Standing, with no ground in the next two tile columns below the feet?
+    guard mario.jumpState == .none else { return false }
+    let footY = rect.maxY
+    let pitAhead = !(1...2).allSatisfy { column in
+      let probeX = rect.maxX + column * 16 - 8
+      return solids.contains { block in
+        let b = block.rect
+        return probeX >= b.x && probeX <= b.maxX && b.y >= footY && b.y <= footY + 64
+      }
+    }
+    return pitAhead
+  }
+}
+
 @Suite("Shipped levels smoke test")
 struct ShippedLevelSmokeTests {
-  @Test(arguments: ["lev1.xml", "Level2.xml", "Level3.xml"])
+  @Test(arguments: [
+    "lev1.xml", "Level2.xml", "Level3.xml", "Level4.xml",
+    "Level5.xml", "Level6.xml", "Level7.xml", "Level8.xml",
+  ])
   func runsWithoutCrashing(name: String) throws {
     let world = try GameWorld(level: BundledAssets.level(named: name))
     var rng = SystemRandomNumberGenerator()

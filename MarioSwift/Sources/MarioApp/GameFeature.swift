@@ -143,7 +143,7 @@ struct GameFeature {
         return reload(&state, levelIndex: state.levelIndex)
 
       case .task:
-        let music = state.levelIndex == 0 ? "level1.mp3" : "level2.mp3"
+        let music = Self.music(for: state.levelIndex)
         return .merge(
           .run { _ in await audioPlayer.playMusic(music) },
           .run { send in
@@ -239,7 +239,12 @@ struct GameFeature {
     state.pendingEnter = false
 
     // Always restart the music: a death reload stopped it for the jingle.
-    let music = levelIndex == 0 ? "level1.mp3" : "level2.mp3"
+    let music = Self.music(for: levelIndex)
     return .run { _ in await audioPlayer.playMusic(music) }
+  }
+
+  /// The two legacy tracks alternate across the level list.
+  static func music(for levelIndex: Int) -> String {
+    levelIndex % 2 == 0 ? "level1.mp3" : "level2.mp3"
   }
 }

@@ -63,7 +63,11 @@ struct LevelCodecTests {
 
   @Test func decodesLevelCatalog() throws {
     let catalog = try BundledAssets.catalog()
-    #expect(catalog.levelFileNames == ["lev1.xml", "Level2.xml", "Level3.xml"])
+    #expect(
+      catalog.levelFileNames == [
+        "lev1.xml", "Level2.xml", "Level3.xml", "Level4.xml",
+        "Level5.xml", "Level6.xml", "Level7.xml", "Level8.xml",
+      ])
     #expect(catalog.marioLives == 5)
   }
 
