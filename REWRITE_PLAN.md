@@ -69,16 +69,20 @@ check items off, add session notes at the bottom, and commit.**
 - [x] Commit
 
 ### Phase 2 — Game engine (pure MarioKit)
-- [ ] `GameWorld` struct: entities instantiated from `LevelDocument`, fixed-tick `advance(input:)`
-- [ ] Port collision detection (`Intersects` + direction logic) — unit tests with crafted rects
-- [ ] Mario movement/jump/fall state machine with original constants — tests (jump apex, landing, wall stop)
-- [ ] Camera/screen tracking + parallax offsets
-- [ ] Blocks: solid/grass/ground collision, brick break, question block pop (item spawn), hidden block, moving block carry
-- [ ] Items: coin, mushroom, life mush, flower; Mario grow/shrink/fire + blink invulnerability
-- [ ] Monsters: Goomba (walk/stomp/fall-die), Koopa (shield states), Piranha (pipe emerge cycle)
-- [ ] Fireballs (bounce, kill monsters), brick pieces
-- [ ] Win (exit + Enter) / die (fall, small-hit) / lives / level progression events
-- [ ] Engine test suite green — commit(s) per chunk
+- [x] `GameWorld` (class, deterministic): entities from `LevelDocument`, fixed-tick `advance(input:)` @ 20Hz,
+      timer-slot handlers (t50/t100/t200/t500) registered in legacy creation order, `drainEvents()` for
+      sounds/died/completed, `renderables()` for the renderer (draw order = legacy object order)
+- [x] Collision port (`classifyCollision`) — unit tests with crafted rects
+- [x] Mario movement/jump/fall with original constants — tests (jump apex ~73px, landing, wall stop, slide)
+- [x] Camera/screen tracking (`ScreenState`: 400×304 background + 320×240 output viewports)
+- [x] Blocks: solid/grass, brick break + flying pieces, question block pop + hidden, moving block carry, pipes
+- [x] Items: coin (incl. in-block pop), mushroom, life mush (emits `.extraLife`), flower, blink invulnerability
+- [x] Monsters: Goomba, Koopa (walk/shield/returning/shieldMoving), Piranha (pipe cycle + aimed fireball)
+- [x] Fireballs (bounce on grass/question/brick, die on solid/pipe — legacy), win/die events
+- [x] 32 tests green — committed
+- Engine quirks preserved on purpose: walkers only recognize grass/question tops as ground (jitter on solid),
+  fireballs eaten by solid blocks, Mario always spawns bottom-left x=20 (XML Mario pos ignored, like the game),
+  Enter is "sticky" until an exit is touched.
 
 ### Phase 3 — Playable game app
 - [ ] TCA `GameFeature`: holds `GameWorld`, tick driven by clock effect, input actions
@@ -111,4 +115,10 @@ check items off, add session notes at the bottom, and commit.**
 
 ## Session log
 
-- **2026-07-10 (session 1)**: Explored C# codebase, wrote this plan. Starting Phase 0.
+- **2026-07-10 (session 1)**: Explored C# codebase, wrote this plan. Phases 0–2 done:
+  package scaffold + assets + legacy XML codec + full engine port with 32 green tests.
+  Key facts for next session: run tests with `MarioSwift/Scripts/test.sh` (not bare `swift test`);
+  engine is class-based (faithful OO port) — TCA state will need to wrap `GameWorld` with
+  identity+tick equality; renderer math: view pos = (newx - screen.output.x, newy - screen.viewTopY),
+  background parallax source x = output.x/3, y = (464 - 304) - output.y/3 (legacy DrawBackground);
+  viewport is 320×240, scale it up integer-ly in the window. Next: Phase 3.
