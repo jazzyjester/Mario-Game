@@ -161,6 +161,7 @@ struct EditorFeature {
     case strokeStarted(State.Cell)
     case undoTapped
 
+    @CasePathable
     enum Delegate {
       case backToMenu
       case playLevel(LevelDocument)

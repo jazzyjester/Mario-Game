@@ -32,5 +32,9 @@ let package = Package(
       name: "MarioKitTests",
       dependencies: ["MarioKit"]
     ),
+    .testTarget(
+      name: "MarioAppTests",
+      dependencies: ["MarioApp"]
+    ),
   ]
 )

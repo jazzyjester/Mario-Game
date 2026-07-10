@@ -72,6 +72,7 @@ struct GameFeature {
     case task
     case tick
 
+    @CasePathable
     enum Delegate {
       case backToMenu
       case backToEditor

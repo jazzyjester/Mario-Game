@@ -113,11 +113,16 @@ check items off, add session notes at the bottom, and commit.**
 - [x] Commit
 
 ### Phase 5 — Polish
-- [ ] App menus & shortcuts, window sizing, app icon
-- [ ] Persist last level / best coins (UserDefaults or Sharing library)
-- [ ] TCA reducer tests (TestStore) for the important flows
-- [ ] CI-able script (`Scripts/ci.sh`: build + test), update root README
-- [ ] Optional: package as .app bundle
+- [x] TCA reducer tests (TestStore): GameFeature death→reload/lives, game-over→backToMenu delegate,
+      custom-level won→backToEditor, bundled level progression, pause (exhaustive); EditorFeature
+      place/undo/redo (exhaustive), eyedropper, validation gating, play delegate, save round-trip;
+      AppFeature navigation (menu↔editor, play-from-editor keeps editor state). 45 tests total.
+- [x] `Scripts/ci.sh` (build + test), root README "Swift rewrite" banner
+- [ ] Native menu bar & shortcuts (Game/File menus via SwiftUI `.commands`), window sizing polish, app icon
+- [ ] Persist last level / sound toggle (@Shared(.appStorage) from Sharing, already a transitive dep)
+- [ ] Optional: package as .app bundle (script: build release, make Contents/MacOS layout, Info.plist, icns from MarioIcon.ico)
+
+**Note for the Delegate enums**: they're `@CasePathable` so tests can `store.receive(\.delegate.backToMenu)`.
 
 ### Phase 6 — Fidelity pass (optional)
 - [ ] Side-by-side quirk checklist vs C# (koopa shield timings, hidden block one-way, pipe spawn timing…)
@@ -126,10 +131,16 @@ check items off, add session notes at the bottom, and commit.**
 
 ## Session log
 
-- **2026-07-10 (session 1)**: Explored C# codebase, wrote this plan. Phases 0–2 done:
-  package scaffold + assets + legacy XML codec + full engine port with 32 green tests.
-  Key facts for next session: run tests with `MarioSwift/Scripts/test.sh` (not bare `swift test`);
-  engine is class-based (faithful OO port) — TCA state will need to wrap `GameWorld` with
-  identity+tick equality; renderer math: view pos = (newx - screen.output.x, newy - screen.viewTopY),
-  background parallax source x = output.x/3, y = (464 - 304) - output.y/3 (legacy DrawBackground);
-  viewport is 320×240, scale it up integer-ly in the window. Next: Phase 3.
+- **2026-07-10 (session 1)**: Explored C# codebase, wrote this plan. **Phases 0–4 done, Phase 5 mostly done.**
+  - Phases 0–2: package scaffold + assets + legacy XML codec + full engine port (faithful OO port,
+    class-based `GameWorld`, `GameSession` wraps it for TCA with identity+tick equality).
+  - Phase 3: playable app — AppFeature/GameFeature, Canvas renderer (verified by screenshots),
+    AVFoundation audio, keyboard via NSEvent monitors, lives/game-over/progression flows.
+  - Phase 4: level editor — palette/drag-paint/undo/params inspector/eyedropper, open/save legacy XML,
+    Play Level round-trip, validation. Canvas verified via `--editor-screenshot`.
+  - Phase 5: 45 tests green (incl. TestStore reducer tests), `Scripts/ci.sh`, README updates.
+  - **Run tests with `MarioSwift/Scripts/test.sh`, never bare `swift test`** (CLT-only machine).
+  - Debug renders: `swift run MarioApp --screenshot f.png [ticks]` / `--editor-screenshot e.png`.
+  - **Next session**: finish Phase 5 leftovers (menu bar `.commands`, @Shared(.appStorage) persistence,
+    app icon / .app bundle script), then Phase 6 fidelity/perf pass. Also worth: manual playthrough
+    feedback from Ronny (jump feel, koopa shield timing) → tune against C# constants in Mario.swift.
