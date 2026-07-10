@@ -101,12 +101,16 @@ check items off, add session notes at the bottom, and commit.**
   for Phase 4's "Play level" button.
 
 ### Phase 4 — Level editor
-- [ ] TCA `EditorFeature`: document state, palette selection, place/erase on grid, drag-paint,
-      object params sheet (question-block item, moving-block params, pipe piranha type), undo/redo
-- [ ] Editor canvas: grid, zoom, scroll, hover preview, object sprites
-- [ ] Open/Save legacy XML, "Play level" button → GameFeature
-- [ ] New-level template, validation (exactly one Mario, at least one Exit)
-- [ ] Commit
+- [x] TCA `EditorFeature`: document, palette tool (place kind / eraser), drag-paint strokes with
+      one undo snapshot per stroke, undo/redo stacks, params inspector (question item, moving
+      platform distance/axis/reversed, pipe piranha), ⌃-click eyedropper absorbs params
+- [x] `EditorCanvas`: full 1024×464 level, zoom 1–3×, scroll, grid, hover highlight, sprite previews
+      (legacy editor frame indices, incl. green hidden-? preview) — verified via `--editor-screenshot`
+- [x] Open/Save/Save As via `FileDialogClient` dependency (NSOpen/NSSavePanel), legacy XML round-trip
+- [x] "Play Level" → GameFeature with `customLevel`/`launchedFromEditor` (Back to Editor keeps editor state)
+- [x] New-level template (grass floor + Mario + exit), validation banner (one Mario, ≥1 exit) gates Play
+- [x] Menu "LEVEL EDITOR" button (⌘E); editor shortcuts ⌘N/⌘O/⌘S/⇧⌘S/⌘Z/⇧⌘Z/⌘P/esc
+- [x] Commit
 
 ### Phase 5 — Polish
 - [ ] App menus & shortcuts, window sizing, app icon

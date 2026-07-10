@@ -24,6 +24,15 @@ struct MarioAppMain: App {
       }
       exit(0)
     }
+    if let flagIndex = CommandLine.arguments.firstIndex(of: "--editor-screenshot"),
+      CommandLine.arguments.count > flagIndex + 1
+    {
+      let path = CommandLine.arguments[flagIndex + 1]
+      MainActor.assumeIsolated {
+        renderEditorScreenshot(to: path)
+      }
+      exit(0)
+    }
 
     // Running as a bare SwiftPM executable: promote to a regular app so the
     // window comes to front and receives key events.
@@ -45,6 +54,8 @@ struct AppView: View {
   var body: some View {
     if let gameStore = store.scope(state: \.game, action: \.game.presented) {
       GameView(store: gameStore)
+    } else if let editorStore = store.scope(state: \.editor, action: \.editor.presented) {
+      EditorView(store: editorStore)
     } else {
       MenuView(store: store)
     }

@@ -40,6 +40,16 @@ struct MenuView: View {
       .keyboardShortcut(.defaultAction)
       .disabled(store.levelNames.isEmpty)
 
+      Button {
+        store.send(.editorTapped)
+      } label: {
+        Text("LEVEL EDITOR")
+          .font(.system(size: 14, weight: .bold, design: .monospaced))
+          .padding(.horizontal, 12)
+          .padding(.vertical, 2)
+      }
+      .keyboardShortcut("e")
+
       Text("← → move · ↑/Z jump · space/X fireball · ⏎ enter exit\nP pause · R restart · esc menu")
         .font(.system(size: 11, design: .monospaced))
         .foregroundStyle(.secondary)
