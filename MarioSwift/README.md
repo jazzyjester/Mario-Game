@@ -30,6 +30,16 @@ and loads the original level XML files.
 See [`REWRITE_PLAN.md`](../REWRITE_PLAN.md) at the repo root for the phased
 build log.
 
+## Screenshots
+
+| Title screen | Level select | Gameplay |
+|---|---|---|
+| ![Title screen](Screenshots/title-screen.png) | ![Level select](Screenshots/level-select.png) | ![Gameplay](Screenshots/gameplay.png) |
+
+| Level editor | Options | About |
+|---|---|---|
+| ![Level editor](Screenshots/level-editor.png) | ![Options](Screenshots/options.png) | ![About](Screenshots/about.png) |
+
 ## Run
 
 ```sh
