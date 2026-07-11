@@ -23,23 +23,21 @@ public enum GameEvent: Equatable, Sendable {
 }
 
 /// Input for one 50ms tick. `left`/`right`/`jump` reflect keys currently
-/// held; `fire`/`enter` are press edges.
+/// held; `fire` is a press edge.
 public struct GameInput: Equatable, Sendable {
   public var left = false
   public var right = false
   public var jump = false
   public var fire = false
-  public var enter = false
 
   public init(
     left: Bool = false, right: Bool = false, jump: Bool = false,
-    fire: Bool = false, enter: Bool = false
+    fire: Bool = false
   ) {
     self.left = left
     self.right = right
     self.jump = jump
     self.fire = fire
-    self.enter = enter
   }
 }
 
@@ -222,9 +220,6 @@ public final class GameWorld {
 
     if input.fire {
       mario.fireBall(self)
-    }
-    if input.enter {
-      mario.enterPressed = true
     }
   }
 

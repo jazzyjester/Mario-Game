@@ -30,7 +30,8 @@ check items off, add session notes at the bottom, and commit.**
 - Object catalog (XML `OName` → behavior): `Mario`, `BlockGrass`, `BlockGround1`, `BlockSolid`,
   `BlockBrick` (breakable when big/fire), `BlockQuestion` (+`Int1` = hidden item ObjectType),
   `BlockQuestionHidden` (invisible until hit), `BlockMoving` (`Int1`=range, `Int2`=MovingType h/v, `Bool1`),
-  `BlockPipeUp` (`Int1` = PiranahType), `CoinBlock`, `ExitBlock` (Enter to finish), `MonsterGoomba`,
+  `BlockPipeUp` (`Int1` = PiranahType), `CoinBlock`, `ExitBlock` (legacy: Enter to finish; Swift
+  rewrite deviation: touching it finishes the level immediately, no key needed), `MonsterGoomba`,
   `MonsterKoopa` (walk → shield → sliding shield), `MonsterPiranah`, `MushRed` (grow), `MushLife` (+1 life),
   `Flower` (fire), `FireBall`, `BlockBrickPiece` (break debris).
 - Mario: Small/Big/Fire (16×16 small, 16×27 big/fire), damage downgrades one stage + blink (~20 anim ticks),
@@ -81,8 +82,9 @@ check items off, add session notes at the bottom, and commit.**
 - [x] Fireballs (bounce on grass/question/brick, die on solid/pipe — legacy), win/die events
 - [x] 32 tests green — committed
 - Engine quirks preserved on purpose: walkers only recognize grass/question tops as ground (jitter on solid),
-  fireballs eaten by solid blocks, Mario always spawns bottom-left x=20 (XML Mario pos ignored, like the game),
-  Enter is "sticky" until an exit is touched.
+  fireballs eaten by solid blocks, Mario always spawns bottom-left x=20 (XML Mario pos ignored, like the game).
+  (Session 3 deviation: touching the exit finishes the level immediately — the legacy "Enter is
+  sticky until an exit is touched" requirement was removed; see Phase 5b/session log.)
 - **Deliberate deviation from C# (session 2)**: the wall-climb bug is FIXED. Mario resolves
   overlaps per axis right after each movement step (see `resolveHorizontalOverlap` /
   `resolveVerticalOverlap` in Mario.swift); the legacy classifier then only sees flush
@@ -154,6 +156,22 @@ check items off, add session notes at the bottom, and commit.**
 
 **Note for the Delegate enums**: they're `@CasePathable` so tests can `store.receive(\.delegate.backToMenu)`.
 
+### Phase 5c — Ronny's feature requests (2026-07-11, session 3)
+- [x] Level-intro splash ("LEVEL N", 1.5s): shows on `.task` (new game / level select /
+      editor play) and when advancing to the next level; NOT shown on a same-level death
+      respawn (that keeps the existing "lives" interstitial instead). `GameFeature.State.Overlay.intro(String)`.
+- [x] Top HUD bar restyled as a solid-background bar (was transparent overlay text):
+      level name (`levelDisplayName`, "LEVEL N") · coin icon + count · Mario icon + lives.
+- [x] Menu: EXIT option (`NSApplication.shared.terminate(nil)`).
+- [x] **Deliberate deviation from C#**: touching the exit finishes the level immediately —
+      the Enter-key requirement (and all its plumbing: `GameInput.enter`, `Mario.enterPressed`,
+      `GameFeature.pendingEnter`/`.enterPressed`) was removed outright, not just bypassed.
+- [x] Level9.xml ("Grassy Overworld"), a classic-World-1-1-flavored level: opening
+      question/brick cluster, a quiet pipe then a piranha pipe, one pit crossing, a small
+      hill climb, exit near the right edge. Generated via `make_levels.py`; LevelManager.xml
+      now lists 9 levels.
+- [x] 51 tests green (geometry + smoke tests now cover 8/9 and 9/9 levels respectively).
+
 ### Phase 6 — Fidelity pass (optional)
 - [ ] Side-by-side quirk checklist vs C# (koopa shield timings, hidden block one-way, pipe spawn timing…)
 - [ ] Performance: only draw on-screen objects, sprite caching
@@ -183,3 +201,15 @@ check items off, add session notes at the bottom, and commit.**
   - **Next session**: Phase 5 leftovers (native menu bar `.commands`, app icon /
     .app bundle script), Phase 6 fidelity checklist, and Ronny's playthrough feedback
     on the new levels' difficulty.
+
+- **2026-07-11 (session 3)**: Ronny's 6 feature requests — see Phase 5c above. 51 tests
+  green. Level-intro splash overlay (entry + next-level advance, not death respawn),
+  HUD restyled into a solid top bar, EXIT menu item, Level9.xml (classic-flavored, 9
+  levels total), and the exit mechanic changed from "walk in + press Enter" to
+  "just walk in" — the enter-key plumbing was deleted outright rather than left dead.
+  Could not visually verify the splash/HUD SwiftUI rendering in this environment (no
+  Xcode, and the existing `--screenshot` debug tool only renders `GameCanvas`, not the
+  full `GameView` with its overlays) — worth a manual playthrough next session.
+  - **Next session**: Phase 5 leftovers still open (native menu bar `.commands`, app
+    icon / .app bundle script), Phase 6 fidelity checklist, and Ronny's visual/feel
+    feedback on the splash timing (1.5s) and the new Level9.

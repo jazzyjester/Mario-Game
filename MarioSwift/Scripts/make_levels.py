@@ -245,6 +245,32 @@ lv.exit(62, 1)
 lv.mario()
 lv.write("Level8.xml")
 
+# ---------------------------------------------------------------- Level 9
+# "Grassy Overworld" — a homage to the classic first level: a question/brick
+# cluster right at the start, a run of pipes (one with a piranha) to hop
+# over, a single pit crossing, then a small hill to climb before the exit.
+lv = Level()
+lv.ground(pits=[(35, 4)])
+lv.question(8, 4, QI_COIN)
+lv.brick_row(9, 10, 4)
+lv.question(11, 4, QI_MUSH)
+lv.brick_row(12, 13, 4)
+lv.hidden(14, 4, QI_LIFE)
+lv.pipe(20)  # quiet pipe
+lv.pipe(25, PIRANHA_FISH)  # danger pipe
+lv.coin_arc(34, 4)  # over the pit at 35..38
+lv.brick_row(40, 42, 4)
+lv.question(43, 4, QI_COIN)
+lv.steps_up(51, 3)  # small hill 51..53, plateau at 54, cliff drop back to grass
+lv.solid_column(54, 3)
+lv.goomba(18)
+lv.goomba(45)
+lv.koopa(48)
+lv.goomba(59)
+lv.exit()
+lv.mario()
+lv.write("Level9.xml")
+
 # ------------------------------------------------------------ LevelManager
 manager = """<?xml version="1.0" encoding="utf-8"?>
 <LevelManager xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -259,8 +285,9 @@ manager = """<?xml version="1.0" encoding="utf-8"?>
     <string>Level6.xml</string>
     <string>Level7.xml</string>
     <string>Level8.xml</string>
+    <string>Level9.xml</string>
   </LevelFilePaths>
 </LevelManager>"""
 with open(os.path.join(OUT, "LevelManager.xml"), "w") as f:
     f.write(manager)
-print("LevelManager.xml: 8 levels")
+print("LevelManager.xml: 9 levels")

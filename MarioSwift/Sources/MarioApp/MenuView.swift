@@ -14,7 +14,7 @@ struct MenuView: View {
   @State private var optionsSelection = 0
 
   private enum MenuItem: Int, CaseIterable {
-    case newGame, levelSelect, editor, options, about
+    case newGame, levelSelect, editor, options, about, exit
 
     var title: String {
       switch self {
@@ -23,6 +23,7 @@ struct MenuView: View {
       case .editor: "LEVEL EDITOR"
       case .options: "OPTIONS"
       case .about: "ABOUT"
+      case .exit: "EXIT"
       }
     }
   }
@@ -308,6 +309,7 @@ struct MenuView: View {
     case .editor: store.send(.editorTapped)
     case .options: store.send(.navigated(.options))
     case .about: store.send(.navigated(.about))
+    case .exit: NSApplication.shared.terminate(nil)
     }
   }
 

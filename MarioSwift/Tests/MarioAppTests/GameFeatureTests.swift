@@ -82,10 +82,9 @@ struct GameFeatureTests {
     }
     store.exhaustivity = .off
 
-    // Walk into the exit with Enter pressed.
+    // Just walk into the exit.
     await store.send(.keyDown(.right))
     for _ in 0..<10 {
-      await store.send(.enterPressed)
       await store.send(.tick)
     }
 
@@ -103,12 +102,13 @@ struct GameFeatureTests {
 
     let store = TestStore(initialState: state) {
       GameFeature()
+    } withDependencies: {
+      $0.continuousClock = ImmediateClock()
     }
     store.exhaustivity = .off
 
     await store.send(.keyDown(.right))
     for _ in 0..<10 {
-      await store.send(.enterPressed)
       await store.send(.tick)
     }
 

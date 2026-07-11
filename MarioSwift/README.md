@@ -12,10 +12,13 @@ and loads the original level XML files.
   from the C# original (physics constants, collision, enemy/item behavior),
   plus a legacy-compatible level XML codec. The one deliberate behavior change:
   the old wall-climb bug is fixed via axis-separated collision resolution.
-- **Playable app** — title screen, level select with progress locks (persisted
-  via `@Shared(.appStorage)`), 8 levels (3 original + 5 new with a difficulty
-  ramp), classic death sequence (leap animation, synthesized jingle, "MARIO × N"
-  lives interstitial), sound/music options, about screen.
+- **Playable app** — title screen (NEW GAME / LEVEL SELECT / LEVEL EDITOR /
+  OPTIONS / ABOUT / EXIT), level select with progress locks (persisted via
+  `@Shared(.appStorage)`), 9 levels (3 original + 6 new with a difficulty ramp),
+  a "LEVEL N" splash on entry and on advancing to the next level, a top HUD bar
+  (level name, coins, lives), classic death sequence (leap animation,
+  synthesized jingle, "MARIO × N" lives interstitial), sound/music options,
+  about screen. Walking into the exit finishes the level instantly.
 - **Level editor** — ported as a TCA feature: palette + drag-paint, undo/redo,
   params inspector, ⌃-click eyedropper, open/save round-trips the legacy XML
   format, "Play Level" jumps straight into the game and back. Reachable from
@@ -47,10 +50,11 @@ cd MarioSwift
 swift run MarioApp
 ```
 
-Controls: ← → move · ↑ or Z jump · space or X fireball · ⏎ enter the exit door ·
-P pause · R restart level · esc back to menu. From the title screen, choose
-LEVEL EDITOR (⌘E) to design levels; the editor's "Play Level" runs them
-immediately in-game and can hand you back to the editor afterward.
+Controls: ← → move · ↑ or Z jump · space or X fireball · walk into the exit
+door to finish the level · P pause · R restart level · esc back to menu. From
+the title screen, choose LEVEL EDITOR (⌘E) to design levels; the editor's
+"Play Level" runs them immediately in-game and can hand you back to the
+editor afterward.
 
 ## Test
 
@@ -72,7 +76,7 @@ swift run MarioApp --editor-screenshot /tmp/e.png
 
 ## Levels
 
-`Scripts/make_levels.py` regenerates the five 2026 levels (Level4–Level8)
+`Scripts/make_levels.py` regenerates the six 2026 levels (Level4–Level9)
 from code; the design rules that keep them beatable are documented in the
 script. The geometry of every level is proven completable by a runner bot
 in `LevelGeometryTests`.

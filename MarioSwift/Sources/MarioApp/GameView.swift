@@ -18,8 +18,9 @@ struct GameView: View {
       hud
 
       if let overlay = store.overlay {
+        // Cut to black immediately, then fade back out to the game.
         overlayView(overlay)
-          .transition(.opacity)
+          .transition(.asymmetric(insertion: .identity, removal: .opacity))
       } else if store.paused {
         Text("PAUSED")
           .font(.system(size: 32, weight: .heavy, design: .monospaced))
@@ -37,20 +38,44 @@ struct GameView: View {
     )
   }
 
+  /// A solid top bar (distinct from the gameplay viewport below it), like a
+  /// classic platformer's status bar: current level on the left, coins and
+  /// lives on the right.
   private var hud: some View {
-    VStack {
-      HStack(spacing: 16) {
-        Text(store.levelName)
+    VStack(spacing: 0) {
+      HStack(spacing: 20) {
+        Text(store.levelDisplayName)
         Spacer()
-        Text("COINS \(store.session.world.mario.collectedCoins)")
-        Text("LIVES \(store.lives)")
+        HStack(spacing: 6) {
+          coinIcon
+          Text("\(store.session.world.mario.collectedCoins)")
+        }
+        HStack(spacing: 6) {
+          marioIcon
+          Text("× \(store.lives)")
+        }
       }
       .font(.system(size: 14, weight: .bold, design: .monospaced))
       .foregroundStyle(.white)
-      .shadow(color: .black, radius: 1, x: 1, y: 1)
-      .padding(8)
+      .padding(.horizontal, 14)
+      .padding(.vertical, 8)
+      .frame(maxWidth: .infinity)
+      .background(Color.black.opacity(0.75))
+
       Spacer()
     }
+  }
+
+  private var coinIcon: some View {
+    Group {
+      if let image = SpriteStore.shared.frame(.coin, source: IRect(x: 0, y: 0, width: 16, height: 16)) {
+        image.resizable().interpolation(.none).frame(width: 16, height: 16)
+      }
+    }
+  }
+
+  private var marioIcon: some View {
+    marioSprite(size: 16)
   }
 
   /// Full-screen black interstitials, like the classic game's own screens.
@@ -58,9 +83,17 @@ struct GameView: View {
     ZStack {
       Color.black
       switch overlay {
+      case .intro(let name):
+        VStack(spacing: 16) {
+          marioSprite(size: 48)
+          Text(name)
+            .font(.system(size: 34, weight: .heavy, design: .monospaced))
+            .foregroundStyle(.white)
+        }
+
       case .lives:
         HStack(spacing: 20) {
-          marioSprite
+          marioSprite(size: 48)
           Text("× \(store.lives)")
             .font(.system(size: 30, weight: .heavy, design: .monospaced))
             .foregroundStyle(.white)
@@ -81,12 +114,12 @@ struct GameView: View {
   }
 
   /// Small Mario, standing frame, pixel-scaled up.
-  private var marioSprite: some View {
+  private func marioSprite(size: CGFloat) -> some View {
     Group {
       if let image = SpriteStore.shared.frame(
         .marioSmall, source: IRect(x: 32, y: 0, width: 16, height: 16))
       {
-        image.resizable().interpolation(.none).frame(width: 48, height: 48)
+        image.resizable().interpolation(.none).frame(width: size, height: size)
       }
     }
   }
@@ -98,7 +131,6 @@ struct GameView: View {
     case 124: store.send(.keyDown(.right))
     case 126, 6: store.send(.keyDown(.jump))  // up arrow, Z
     case 49, 7: store.send(.firePressed)  // space, X
-    case 36, 76: store.send(.enterPressed)  // return
     case 35: store.send(.pauseToggled)  // P
     case 15: store.send(.restartTapped)  // R
     case 53: store.send(.backToMenuTapped)  // esc

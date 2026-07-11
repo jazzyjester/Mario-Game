@@ -55,9 +55,11 @@ the phased build log is in [`REWRITE_PLAN.md`](REWRITE_PLAN.md).
 - **Engine (`MarioKit`)** — deterministic 20Hz simulation ported object-for-object
   from the C# original, plus a legacy-compatible level XML codec. One deliberate
   behavior change: the old wall-climb bug is fixed.
-- **Playable app** — title screen, level select with progress locks, 8 levels
-  (the original 3 plus 5 new with a difficulty ramp), classic death sequence,
-  sound/music options, about screen.
+- **Playable app** — title screen (with an EXIT option), level select with
+  progress locks, 9 levels (the original 3 plus 6 new with a difficulty ramp),
+  a level-intro splash on entry/advance, a top HUD bar (level/coins/lives),
+  classic death sequence, sound/music options, about screen. Walking into the
+  exit finishes the level — no key press needed.
 - **Level editor** — palette + drag-paint, undo/redo, params inspector,
   eyedropper, open/save round-trips the legacy XML format, "Play Level" jumps
   straight into the game and back.

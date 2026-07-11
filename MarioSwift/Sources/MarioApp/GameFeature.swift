@@ -20,7 +20,6 @@ struct GameFeature {
 
     var heldKeys: Set<HeldKey> = []
     var pendingFire = false
-    var pendingEnter = false
 
     /// True when this game was launched from the editor (changes the exit flow).
     var launchedFromEditor = false
@@ -34,7 +33,16 @@ struct GameFeature {
       return levelNames[levelIndex]
     }
 
+    /// Friendly name shown on the HUD and the level-intro splash.
+    var levelDisplayName: String {
+      guard levelNames.indices.contains(levelIndex) else { return "CUSTOM LEVEL" }
+      return "LEVEL \(levelIndex + 1)"
+    }
+
     enum Overlay: Equatable {
+      /// Shown briefly when a level first loads (new game, level select, or
+      /// advancing to the next level after completing one).
+      case intro(String)
       /// The black interstitial after a death: "MARIO × lives".
       case lives
       case gameOver
@@ -69,7 +77,7 @@ struct GameFeature {
     case keyDown(HeldKey)
     case keyUp(HeldKey)
     case firePressed
-    case enterPressed
+    case introFinished
     case livesScreenFinished
     case overlayConfirmed
     case pauseToggled
@@ -113,8 +121,8 @@ struct GameFeature {
         state.pendingFire = true
         return .none
 
-      case .enterPressed:
-        state.pendingEnter = true
+      case .introFinished:
+        if case .intro = state.overlay { state.overlay = nil }
         return .none
 
       case .livesScreenFinished:
@@ -129,7 +137,7 @@ struct GameFeature {
             .run { _ in await audioPlayer.stopMusic() },
             .send(.delegate(state.launchedFromEditor ? .backToEditor : .backToMenu))
           )
-        case .lives, nil:
+        case .intro, .lives, nil:
           return .none
         }
 
@@ -151,7 +159,8 @@ struct GameFeature {
               await send(.tick)
             }
           }
-          .cancellable(id: CancelID.tick, cancelInFlight: true)
+          .cancellable(id: CancelID.tick, cancelInFlight: true),
+          introEffect(&state)
         )
 
       case .tick:
@@ -161,11 +170,9 @@ struct GameFeature {
           left: state.heldKeys.contains(.left),
           right: state.heldKeys.contains(.right),
           jump: state.heldKeys.contains(.jump),
-          fire: state.pendingFire,
-          enter: state.pendingEnter
+          fire: state.pendingFire
         )
         state.pendingFire = false
-        state.pendingEnter = false
 
         let events = state.session.advance(input)
         return handle(events, &state)
@@ -208,7 +215,7 @@ struct GameFeature {
           let unlocked = min(state.levelNames.count, state.levelIndex + 2)
           state.$unlockedLevels.withLock { $0 = max($0, unlocked) }
           if state.levelIndex + 1 < state.levelNames.count {
-            effects.append(reload(&state, levelIndex: state.levelIndex + 1))
+            effects.append(reload(&state, levelIndex: state.levelIndex + 1, showIntro: true))
           } else {
             state.overlay = .won
           }
@@ -219,8 +226,9 @@ struct GameFeature {
   }
 
   /// Rebuild the world for the given level (same level = death reload, next
-  /// level = progression) and restart its music.
-  private func reload(_ state: inout State, levelIndex: Int) -> Effect<Action> {
+  /// level = progression) and restart its music. `showIntro` shows the level
+  /// splash — only for progression, not a same-level death respawn.
+  private func reload(_ state: inout State, levelIndex: Int, showIntro: Bool = false) -> Effect<Action> {
     let document: LevelDocument?
     if let custom = state.customLevel {
       document = custom
@@ -236,11 +244,20 @@ struct GameFeature {
     state.levelIndex = levelIndex
     state.heldKeys = []
     state.pendingFire = false
-    state.pendingEnter = false
 
     // Always restart the music: a death reload stopped it for the jingle.
     let music = Self.music(for: levelIndex)
-    return .run { _ in await audioPlayer.playMusic(music) }
+    let musicEffect = Effect<Action>.run { _ in await audioPlayer.playMusic(music) }
+    return showIntro ? .merge(musicEffect, introEffect(&state)) : musicEffect
+  }
+
+  /// Shows the "entering a level" splash and schedules its auto-dismiss.
+  private func introEffect(_ state: inout State) -> Effect<Action> {
+    state.overlay = .intro(state.levelDisplayName)
+    return .run { send in
+      try await clock.sleep(for: .seconds(1.5))
+      await send(.introFinished)
+    }
   }
 
   /// The two legacy tracks alternate across the level list.

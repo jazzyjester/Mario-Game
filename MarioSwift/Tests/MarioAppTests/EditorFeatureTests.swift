@@ -196,12 +196,13 @@ struct AppFeatureTests {
 
     let store = TestStore(initialState: state) {
       GameFeature()
+    } withDependencies: {
+      $0.continuousClock = ImmediateClock()
     }
     store.exhaustivity = .off
 
     await store.send(.keyDown(.right))
     for _ in 0..<10 {
-      await store.send(.enterPressed)
       await store.send(.tick)
     }
 
