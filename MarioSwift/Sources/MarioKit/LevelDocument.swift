@@ -53,7 +53,7 @@ public struct LevelObject: Equatable, Codable, Sendable, Hashable {
 /// A whole level. Pixel dimensions are fixed in the legacy engine.
 public struct LevelDocument: Equatable, Codable, Sendable {
   public static let tileSize = 16
-  public static let pixelWidth = 1024
+  public static let pixelWidth = 2048
   public static let pixelHeight = 464
 
   public var objects: [LevelObject]

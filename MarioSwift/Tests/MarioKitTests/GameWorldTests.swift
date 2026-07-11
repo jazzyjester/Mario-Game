@@ -387,13 +387,13 @@ struct LevelGeometryTests {
   /// Every listed level's *geometry* must be completable by a simple
   /// "run right, jump over walls and pits" runner once monsters are stripped
   /// (a player can dodge monsters; the terrain itself must never dead-end).
-  /// This guards the generated levels 4–9 and the design rules they follow
+  /// This guards the generated levels 4–10 and the design rules they follow
   /// (pits ≤ 4 tiles, climbs ≤ 4 tiles, no ceilings over required jumps).
   /// Level2 is exempt: its whole right half is a void crossed on moving
   /// platforms, beyond a simple runner (covered by the smoke test instead).
   @Test(arguments: [
     "lev1.xml", "Level3.xml", "Level4.xml",
-    "Level5.xml", "Level6.xml", "Level7.xml", "Level8.xml", "Level9.xml",
+    "Level5.xml", "Level6.xml", "Level7.xml", "Level8.xml", "Level9.xml", "Level10.xml",
   ])
   func geometryIsCompletable(name: String) throws {
     var document = try BundledAssets.level(named: name)
@@ -408,7 +408,7 @@ struct LevelGeometryTests {
 
     let world = try GameWorld(level: document)
     var completed = false
-    for _ in 0..<6000 {
+    for _ in 0..<12000 {  // Level10 is twice the width of the others
       world.advance(GameInput(right: true, jump: shouldJump(world)))
       if world.drainEvents().contains(.levelCompleted) {
         completed = true
@@ -457,7 +457,7 @@ struct LevelGeometryTests {
 struct ShippedLevelSmokeTests {
   @Test(arguments: [
     "lev1.xml", "Level2.xml", "Level3.xml", "Level4.xml",
-    "Level5.xml", "Level6.xml", "Level7.xml", "Level8.xml", "Level9.xml",
+    "Level5.xml", "Level6.xml", "Level7.xml", "Level8.xml", "Level9.xml", "Level10.xml",
   ])
   func runsWithoutCrashing(name: String) throws {
     let world = try GameWorld(level: BundledAssets.level(named: name))
