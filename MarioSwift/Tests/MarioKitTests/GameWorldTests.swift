@@ -281,18 +281,14 @@ struct ItemsAndBlocksTests {
     #expect(sawFlyingPiece)
   }
 
-  @Test func exitRequiresEnter() throws {
-    // Exit right at the spawn point.
-    let world = try makeWorld(extra: [LevelObject(kind: .exit, x: 2, y: 1)])
-    for _ in 0..<5 {
-      world.advance(GameInput(right: true))
-    }
-    #expect(!world.finished)
-
+  @Test func walkingIntoExitCompletesLevelWithoutEnter() throws {
+    // Exit a few tiles past the spawn point.
+    let world = try makeWorld(extra: [LevelObject(kind: .exit, x: 4, y: 1)])
     var events: [GameEvent] = []
-    for _ in 0..<5 {
-      world.advance(GameInput(enter: true))
+    for _ in 0..<20 {
+      world.advance(GameInput(right: true))
       events += world.drainEvents()
+      if world.finished { break }
     }
     #expect(events.contains(.levelCompleted))
     #expect(world.finished)
@@ -391,13 +387,13 @@ struct LevelGeometryTests {
   /// Every listed level's *geometry* must be completable by a simple
   /// "run right, jump over walls and pits" runner once monsters are stripped
   /// (a player can dodge monsters; the terrain itself must never dead-end).
-  /// This guards the generated levels 4–8 and the design rules they follow
+  /// This guards the generated levels 4–9 and the design rules they follow
   /// (pits ≤ 4 tiles, climbs ≤ 4 tiles, no ceilings over required jumps).
   /// Level2 is exempt: its whole right half is a void crossed on moving
   /// platforms, beyond a simple runner (covered by the smoke test instead).
   @Test(arguments: [
     "lev1.xml", "Level3.xml", "Level4.xml",
-    "Level5.xml", "Level6.xml", "Level7.xml", "Level8.xml",
+    "Level5.xml", "Level6.xml", "Level7.xml", "Level8.xml", "Level9.xml",
   ])
   func geometryIsCompletable(name: String) throws {
     var document = try BundledAssets.level(named: name)
@@ -413,7 +409,7 @@ struct LevelGeometryTests {
     let world = try GameWorld(level: document)
     var completed = false
     for _ in 0..<6000 {
-      world.advance(GameInput(right: true, jump: shouldJump(world), enter: true))
+      world.advance(GameInput(right: true, jump: shouldJump(world)))
       if world.drainEvents().contains(.levelCompleted) {
         completed = true
         break
@@ -461,7 +457,7 @@ struct LevelGeometryTests {
 struct ShippedLevelSmokeTests {
   @Test(arguments: [
     "lev1.xml", "Level2.xml", "Level3.xml", "Level4.xml",
-    "Level5.xml", "Level6.xml", "Level7.xml", "Level8.xml",
+    "Level5.xml", "Level6.xml", "Level7.xml", "Level8.xml", "Level9.xml",
   ])
   func runsWithoutCrashing(name: String) throws {
     let world = try GameWorld(level: BundledAssets.level(named: name))
@@ -473,8 +469,7 @@ struct ShippedLevelSmokeTests {
         left: tick % 97 < 5,
         right: tick % 97 >= 5,
         jump: tick % 31 < 12,
-        fire: Int.random(in: 0..<20, using: &rng) == 0,
-        enter: tick % 50 == 0
+        fire: Int.random(in: 0..<20, using: &rng) == 0
       )
       world.advance(input)
       _ = world.drainEvents()

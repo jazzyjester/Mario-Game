@@ -18,7 +18,6 @@ public final class Mario: AnimatedEntity {
   public internal(set) var blinkingShow = true
   var blinkValue = 0
   var upPressed = false
-  var enterPressed = false
 
   // Jump parabola state (50ms ticks, t advances 0.35 per tick).
   var startVelocity: Double = 0
@@ -262,10 +261,7 @@ public final class Mario: AnimatedEntity {
     super.intersection(c, g, world)
     switch g.kind {
     case .exit:
-      if enterPressed {
-        enterPressed = false
-        world.levelCompleted()
-      }
+      world.levelCompleted()
 
     case .flower:
       g.visible = false
