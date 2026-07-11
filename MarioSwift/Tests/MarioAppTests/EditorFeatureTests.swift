@@ -5,6 +5,51 @@ import Testing
 
 @testable import MarioApp
 
+/// In-memory `LevelStorageClient` stub: `bundled` seeds fallback documents
+/// (standing in for `BundledAssets`), `overrides` tracks saved edits — same
+/// shape as the live implementation, without touching disk.
+private final class TestLevelStorage: @unchecked Sendable {
+  private let lock = NSLock()
+  private let bundled: [String: LevelDocument]
+  private var overrides: [String: LevelDocument] = [:]
+
+  init(bundled: [String: LevelDocument]) {
+    self.bundled = bundled
+  }
+
+  func hasOverride(_ name: String) -> Bool {
+    lock.lock(); defer { lock.unlock() }
+    return overrides[name] != nil
+  }
+
+  var client: LevelStorageClient {
+    LevelStorageClient(
+      load: { [self] name in
+        lock.lock(); defer { lock.unlock() }
+        if let doc = overrides[name] { return doc }
+        if let doc = bundled[name] { return doc }
+        throw LegacyLevelXML.CodecError.malformedXML
+      },
+      hasOverride: { [self] name in
+        lock.lock(); defer { lock.unlock() }
+        return overrides[name] != nil
+      },
+      save: { [self] name, document in
+        lock.lock(); defer { lock.unlock() }
+        overrides[name] = document
+      },
+      revert: { [self] name in
+        lock.lock(); defer { lock.unlock() }
+        overrides.removeValue(forKey: name)
+      },
+      overriddenNames: { [self] in
+        lock.lock(); defer { lock.unlock() }
+        return Set(overrides.keys)
+      }
+    )
+  }
+}
+
 @MainActor
 @Suite("EditorFeature")
 struct EditorFeatureTests {
@@ -114,18 +159,113 @@ struct EditorFeatureTests {
     let reloaded = try LegacyLevelXML.decode(try Data(contentsOf: url))
     #expect(reloaded == store.state.document)
   }
+
+  @Test func bundledLevelPickedLoadsOriginalWhenNoOverrideSaved() async {
+    let original = LevelDocument(objects: [LevelObject(kind: .mario, x: 1, y: 1)])
+    let storage = TestLevelStorage(bundled: ["Level3.xml": original])
+    let store = TestStore(initialState: EditorFeature.State(levelNames: ["Level1.xml", "Level2.xml", "Level3.xml"])) {
+      EditorFeature()
+    } withDependencies: {
+      $0.levelStorage = storage.client
+    }
+    store.exhaustivity = .off
+
+    await store.send(.bundledLevelPicked("Level3.xml"))
+    #expect(store.state.document == original)
+    #expect(store.state.bundledLevelName == "Level3.xml")
+    #expect(store.state.bundledLevelDisplayName == "Level 3")
+    #expect(!store.state.hasOverride)
+  }
+
+  @Test func savingABundledLevelPersistsAnOverrideAndRevertRestoresTheOriginal() async {
+    let original = LevelDocument(objects: [LevelObject(kind: .mario, x: 1, y: 1)])
+    let edited = LevelDocument(objects: [
+      LevelObject(kind: .mario, x: 1, y: 1),
+      LevelObject(kind: .blockBrick, x: 5, y: 0),
+    ])
+    let storage = TestLevelStorage(bundled: ["Level2.xml": original])
+    var state = EditorFeature.State(levelNames: ["Level1.xml", "Level2.xml"])
+    state.bundledLevelName = "Level2.xml"
+    state.document = edited
+    state.isDirty = true
+    let store = TestStore(initialState: state) {
+      EditorFeature()
+    } withDependencies: {
+      $0.levelStorage = storage.client
+    }
+    store.exhaustivity = .off
+
+    // Saving persists the edit to an override — the bundled original is
+    // untouched (the stub's `bundled` dictionary never changes).
+    await store.send(.saveTapped)
+    #expect(store.state.hasOverride)
+    #expect(!store.state.isDirty)
+    #expect(storage.hasOverride("Level2.xml"))
+
+    // Reverting deletes the override and restores the original document.
+    await store.send(.revertTapped)
+    #expect(store.state.document == original)
+    #expect(!store.state.hasOverride)
+    #expect(!storage.hasOverride("Level2.xml"))
+  }
+
+  @Test func eraserRemovesMultiTileObjectFromAnyFootprintTile() async {
+    var state = EditorFeature.State()
+    state.document.objects.append(LevelObject(kind: .blockPipeUp, x: 30, y: 0))
+    state.tool = .erase
+    let store = TestStore(initialState: state) {
+      EditorFeature()
+    }
+    store.exhaustivity = .off
+
+    // `blockPipeUp` renders 2×2 tiles; click its upper-right tile, not its
+    // (30, 0) anchor — this used to be a silent no-op.
+    await store.send(.strokeStarted(.init(x: 31, y: 1)))
+    #expect(!store.state.document.objects.contains { $0.kind == .blockPipeUp })
+  }
+
+  @Test func selectToolEditsExistingObjectParamsAndDeletes() async {
+    // y: 1 (on top of the ground row, not embedded in it) so the pipe's
+    // anchor doesn't collide with a ground tile's own (x, 0) anchor.
+    var state = EditorFeature.State()
+    state.document.objects.append(
+      LevelObject(kind: .blockPipeUp, x: 20, y: 1, ints: [PiranhaKind.fish.rawValue, 0, 0]))
+    state.tool = .select
+    let store = TestStore(initialState: state) {
+      EditorFeature()
+    }
+    store.exhaustivity = .off
+
+    // Clicking the pipe's upper-right footprint tile (not its anchor)
+    // still selects it, since blockPipeUp renders 2×2 tiles.
+    await store.send(.selectTapped(.init(x: 21, y: 2)))
+    #expect(store.state.selectedCell == .init(x: 20, y: 1))
+    #expect(store.state.selectionParams.piranha == .fish)
+
+    // Editing the inspector's params live-updates the placed object without
+    // changing its kind or position.
+    await store.send(.binding(.set(\.selectionParams.piranha, .fire)))
+    let updated = store.state.document.objects.first { $0.x == 20 && $0.y == 1 }
+    #expect(updated?.kind == .blockPipeUp)
+    #expect(updated?.ints[0] == PiranhaKind.fire.rawValue)
+
+    await store.send(.deleteSelectedTapped)
+    #expect(!store.state.document.objects.contains { $0.x == 20 && $0.y == 1 })
+    #expect(store.state.selectedCell == nil)
+  }
 }
 
 @MainActor
 @Suite("AppFeature navigation")
 struct AppFeatureTests {
   @Test func menuToEditorAndBack() async {
-    let store = TestStore(initialState: AppFeature.State()) {
+    let state = AppFeature.State()
+    let store = TestStore(initialState: state) {
       AppFeature()
     }
 
     await store.send(.editorTapped) {
-      $0.editor = EditorFeature.State()
+      $0.editor = EditorFeature.State(levelNames: state.levelNames)
     }
     await store.send(.editor(.presented(.delegate(.backToMenu)))) {
       $0.editor = nil
