@@ -24,11 +24,12 @@ struct EditorView: View {
         Divider()
         statusBar
       }
-      if paramsKind != nil {
+      if showsInspector {
         inspector
           .frame(minWidth: 200, maxWidth: 240)
       }
     }
+    .onAppear { store.send(.editorAppeared) }
   }
 
   private var paramsKind: ObjectKind? {
@@ -36,11 +37,24 @@ struct EditorView: View {
     return nil
   }
 
+  /// The object the Select tool currently has selected, if any.
+  private var selectedObject: LevelObject? {
+    guard let cell = store.selectedCell else { return nil }
+    return store.document.objects.first { $0.x == cell.x && $0.y == cell.y }
+  }
+
+  private var showsInspector: Bool {
+    store.tool == .select ? selectedObject != nil : paramsKind != nil
+  }
+
   // MARK: Palette
 
   private var palette: some View {
     ScrollView {
       VStack(alignment: .leading, spacing: 6) {
+        paletteButton(icon: "cursorarrow", title: "Select", isSelected: store.tool == .select) {
+          store.send(.binding(.set(\.tool, .select)))
+        }
         paletteButton(icon: "eraser", title: "Eraser", isSelected: store.tool == .erase) {
           store.send(.binding(.set(\.tool, .erase)))
         }
@@ -112,12 +126,25 @@ struct EditorView: View {
 
       Divider().frame(height: 16)
 
+      levelMenu
+      Button("Revert to Original", systemImage: "arrow.uturn.backward.circle") {
+        store.send(.revertTapped)
+      }
+      .disabled(!store.hasOverride)
+
+      Divider().frame(height: 16)
+
       Button("Undo", systemImage: "arrow.uturn.backward") { store.send(.undoTapped) }
         .keyboardShortcut("z")
         .disabled(store.undoStack.isEmpty)
       Button("Redo", systemImage: "arrow.uturn.forward") { store.send(.redoTapped) }
         .keyboardShortcut("z", modifiers: [.command, .shift])
         .disabled(store.redoStack.isEmpty)
+      Button("Delete", systemImage: "trash") { store.send(.deleteSelectedTapped) }
+        .keyboardShortcut(.delete, modifiers: [])
+        .disabled(store.tool != .select || selectedObject == nil)
+        .hidden()
+        .frame(width: 0, height: 0)
 
       Divider().frame(height: 16)
 
@@ -166,6 +193,10 @@ struct EditorView: View {
       Text("\(store.fileName)\(store.isDirty ? " •" : "")")
       Text("\(store.document.objects.count) objects")
         .foregroundStyle(.secondary)
+      if !objectCountSummary.isEmpty {
+        Text(objectCountSummary)
+          .foregroundStyle(.secondary)
+      }
       if let cell = store.hoverCell {
         Text("(\(cell.x), \(cell.y))")
           .foregroundStyle(.secondary)
@@ -175,7 +206,7 @@ struct EditorView: View {
       if let message = store.statusMessage {
         Text(message).foregroundStyle(.secondary)
       }
-      Text("⌃-click: pick object")
+      Text("⌃-click: pick object · right-click: erase")
         .foregroundStyle(.tertiary)
     }
     .font(.caption)
@@ -183,47 +214,102 @@ struct EditorView: View {
     .padding(.vertical, 6)
   }
 
+  /// A compact "3 coins · 2 goombas · 1 koopa" summary of the placeable
+  /// (non-terrain) objects, for a quick read on level composition.
+  private var objectCountSummary: String {
+    let counted: [ObjectKind] = [
+      .coin, .monsterGoomba, .monsterKoopa, .blockQuestion, .blockQuestionHidden,
+      .blockMoving, .blockPipeUp, .blockBrick,
+    ]
+    let parts = counted.compactMap { kind -> String? in
+      let count = store.document.objects.count { $0.kind == kind }
+      guard count > 0 else { return nil }
+      return "\(count) \(kind.displayName.lowercased())\(count == 1 ? "" : "s")"
+    }
+    return parts.joined(separator: " · ")
+  }
+
+  // MARK: Level menu
+
+  private var levelMenu: some View {
+    Menu {
+      ForEach(Array(store.levelNames.enumerated()), id: \.offset) { index, name in
+        Button {
+          store.send(.bundledLevelPicked(name))
+        } label: {
+          if store.overriddenLevelNames.contains(name) {
+            Label("Level \(index + 1)", systemImage: "pencil")
+          } else {
+            Text("Level \(index + 1)")
+          }
+        }
+      }
+    } label: {
+      Label(store.bundledLevelDisplayName ?? "Edit Level", systemImage: "list.number")
+    }
+    .menuStyle(.borderlessButton)
+    .fixedSize()
+  }
+
   // MARK: Inspector
 
   @ViewBuilder
   private var inspector: some View {
     Form {
-      switch paramsKind {
-      case .blockQuestion, .blockQuestionHidden:
-        Picker("Hidden item", selection: $store.params.questionItem) {
-          Text("Coin").tag(QuestionBlockItem.coin)
-          Text("Mushroom").tag(QuestionBlockItem.mushroom)
-          Text("Fire Flower").tag(QuestionBlockItem.flower)
-          Text("1-Up Mushroom").tag(QuestionBlockItem.lifeMushroom)
+      if store.tool == .select, let object = selectedObject {
+        Section(object.kind.displayName) {
+          if object.kind.hasParams {
+            paramsFields(kind: object.kind, binding: $store.selectionParams)
+          }
+          Button(role: .destructive) {
+            store.send(.deleteSelectedTapped)
+          } label: {
+            Label("Delete", systemImage: "trash")
+          }
         }
-        .pickerStyle(.radioGroup)
-
-      case .blockMoving:
-        Picker("Travel distance", selection: $store.params.movingDistance) {
-          Text("Small (25px)").tag(25)
-          Text("Medium (50px)").tag(50)
-          Text("Big (75px)").tag(75)
-          Text("Huge (100px)").tag(100)
-        }
-        Picker("Direction", selection: $store.params.movingAxisRaw) {
-          Text("Up / Down").tag(0)
-          Text("Right / Left").tag(1)
-        }
-        Toggle("Start reversed", isOn: $store.params.movingStartReversed)
-
-      case .blockPipeUp:
-        Picker("Piranha", selection: $store.params.piranha) {
-          Text("None").tag(PiranhaKind.none)
-          Text("Piranha").tag(PiranhaKind.fish)
-          Text("Fire Piranha").tag(PiranhaKind.fire)
-        }
-        .pickerStyle(.radioGroup)
-
-      default:
-        EmptyView()
+      } else if let kind = paramsKind {
+        paramsFields(kind: kind, binding: $store.params)
       }
     }
     .formStyle(.grouped)
+  }
+
+  @ViewBuilder
+  private func paramsFields(kind: ObjectKind, binding: Binding<PlacementParams>) -> some View {
+    switch kind {
+    case .blockQuestion, .blockQuestionHidden:
+      Picker("Hidden item", selection: binding.questionItem) {
+        Text("Coin").tag(QuestionBlockItem.coin)
+        Text("Mushroom").tag(QuestionBlockItem.mushroom)
+        Text("Fire Flower").tag(QuestionBlockItem.flower)
+        Text("1-Up Mushroom").tag(QuestionBlockItem.lifeMushroom)
+      }
+      .pickerStyle(.radioGroup)
+
+    case .blockMoving:
+      Picker("Travel distance", selection: binding.movingDistance) {
+        Text("Small (25px)").tag(25)
+        Text("Medium (50px)").tag(50)
+        Text("Big (75px)").tag(75)
+        Text("Huge (100px)").tag(100)
+      }
+      Picker("Direction", selection: binding.movingAxisRaw) {
+        Text("Up / Down").tag(0)
+        Text("Right / Left").tag(1)
+      }
+      Toggle("Start reversed", isOn: binding.movingStartReversed)
+
+    case .blockPipeUp:
+      Picker("Piranha", selection: binding.piranha) {
+        Text("None").tag(PiranhaKind.none)
+        Text("Piranha").tag(PiranhaKind.fish)
+        Text("Fire Piranha").tag(PiranhaKind.fire)
+      }
+      .pickerStyle(.radioGroup)
+
+    default:
+      EmptyView()
+    }
   }
 }
 
@@ -262,13 +348,10 @@ struct EditorCanvas: View {
       }
       context.stroke(grid, with: .color(.black.opacity(0.12)), lineWidth: 0.5)
 
-      // Hover highlight.
+      // Hover highlight — the whole footprint for Select/Erase (so it's
+      // obvious what a click will select or remove), a single tile otherwise.
       if let cell = store.hoverCell {
-        let rect = CGRect(
-          x: Double(cell.x) * tile,
-          y: (Double(EditorFeature.gridHeight - 1 - cell.y)) * tile + extraTopInset(zoom: zoom),
-          width: tile, height: tile
-        )
+        let rect = hoverRect(for: cell, zoom: zoom, tile: tile)
         context.stroke(Path(rect), with: .color(.white), lineWidth: 2)
         context.stroke(Path(rect.insetBy(dx: -1, dy: -1)), with: .color(.black.opacity(0.6)), lineWidth: 1)
       }
@@ -282,6 +365,8 @@ struct EditorCanvas: View {
             strokeInProgress = true
             if NSEvent.modifierFlags.contains(.control) {
               store.send(.eyedropper(cell))
+            } else if store.tool == .select {
+              store.send(.selectTapped(cell))
             } else {
               store.send(.strokeStarted(cell))
             }
@@ -294,6 +379,12 @@ struct EditorCanvas: View {
           store.send(.strokeEnded)
         }
     )
+    .overlay(
+      RightClickCatcher { point in
+        guard let cell = cell(at: point, zoom: zoom) else { return }
+        store.send(.eraseTapped(cell))
+      }
+    )
     .onContinuousHover { phase in
       switch phase {
       case .active(let location):
@@ -304,9 +395,32 @@ struct EditorCanvas: View {
     }
   }
 
-  /// The level is 464px tall = 29 rows exactly; no inset needed, kept for
-  /// clarity of the row math.
-  private func extraTopInset(zoom: Double) -> Double { 0 }
+  /// The object under `cell`, if any, using the same footprint-aware hit
+  /// test as the reducer's eraser/select tools.
+  private func hoveredObject(at cell: EditorFeature.State.Cell) -> LevelObject? {
+    store.document.objects.last {
+      let footprint = EditorSprite.tileFootprint(for: $0.kind)
+      return ($0.x..<($0.x + footprint.width)).contains(cell.x)
+        && ($0.y..<($0.y + footprint.height)).contains(cell.y)
+    }
+  }
+
+  private func hoverRect(for cell: EditorFeature.State.Cell, zoom: Double, tile: Double) -> CGRect {
+    let singleTile = CGRect(
+      x: Double(cell.x) * tile,
+      y: Double(EditorFeature.gridHeight - 1 - cell.y) * tile,
+      width: tile, height: tile
+    )
+    guard store.tool == .select || store.tool == .erase, let object = hoveredObject(at: cell)
+    else { return singleTile }
+    let footprint = EditorSprite.tileFootprint(for: object.kind)
+    return CGRect(
+      x: Double(object.x) * tile,
+      y: Double(EditorFeature.gridHeight - object.y - footprint.height) * tile,
+      width: Double(footprint.width) * tile,
+      height: Double(footprint.height) * tile
+    )
+  }
 
   private func cell(at location: CGPoint, zoom: Double) -> EditorFeature.State.Cell? {
     let tile = 16.0 * zoom
@@ -379,6 +493,18 @@ enum EditorSprite {
       source: IRect(x: frameWidth * info.frameIndex, y: 0, width: frameWidth, height: info.sheet.size.height))
   }
 
+  /// How many tiles wide/tall a kind's sprite renders as, so hit-testing
+  /// (eraser, eyedropper, Select tool) can match its whole footprint instead
+  /// of just its anchor tile — needed for e.g. a 2×2 pipe or a 1×2 exit door.
+  static func tileFootprint(for kind: ObjectKind) -> (width: Int, height: Int) {
+    let info = frameInfo(for: kind)
+    let frameWidth = info.sheet.size.width / info.frameCount
+    return (
+      width: Int((Double(frameWidth) / Double(LevelDocument.tileSize)).rounded(.up)),
+      height: Int((Double(info.sheet.size.height) / Double(LevelDocument.tileSize)).rounded(.up))
+    )
+  }
+
   /// Sprite + level-pixel rect for an object, bottom-anchored in its cell
   /// (taller-than-a-tile sprites extend upward, like in the game).
   static func renderable(for object: LevelObject) -> (sheet: SpriteSheet, source: IRect, dest: IRect)? {
@@ -392,5 +518,37 @@ enum EditorSprite {
       source: IRect(x: frameWidth * info.frameIndex, y: 0, width: frameWidth, height: frameHeight),
       dest: IRect(x: pixelX, y: bottom - frameHeight, width: frameWidth, height: frameHeight)
     )
+  }
+}
+
+/// A transparent overlay that reports right mouse clicks without stealing
+/// any other event (left click/drag, hover) from the views underneath it.
+private struct RightClickCatcher: NSViewRepresentable {
+  var onRightClick: (CGPoint) -> Void
+
+  func makeNSView(context: Context) -> CatcherView {
+    let view = CatcherView()
+    view.onRightClick = onRightClick
+    return view
+  }
+
+  func updateNSView(_ nsView: CatcherView, context: Context) {
+    nsView.onRightClick = onRightClick
+  }
+
+  final class CatcherView: NSView {
+    var onRightClick: ((CGPoint) -> Void)?
+
+    // Only claim the hit for right-clicks; every other event (left
+    // click/drag, hover, scroll) passes straight through to the canvas.
+    override func hitTest(_ point: NSPoint) -> NSView? {
+      guard NSApp.currentEvent?.type == .rightMouseDown else { return nil }
+      return super.hitTest(point)
+    }
+
+    override func rightMouseDown(with event: NSEvent) {
+      let point = convert(event.locationInWindow, from: nil)
+      onRightClick?(CGPoint(x: point.x, y: bounds.height - point.y))
+    }
   }
 }

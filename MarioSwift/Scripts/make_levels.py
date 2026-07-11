@@ -271,6 +271,55 @@ lv.exit()
 lv.mario()
 lv.write("Level9.xml")
 
+# --------------------------------------------------------------- Level 10
+# "The Long Haul" — twice the width of every other level (128 tiles), for
+# players who want a marathon. Two halves: a warm-up recap of levels 1-9's
+# tricks (pits, a quiet pipe, a hill), then a longer back half with a
+# bridge payout, a tower climb, and a two-pipe corridor before the exit.
+WIDTH = 128
+lv = Level()
+lv.ground(pits=[(16, 3), (36, 4), (58, 3), (76, 4), (96, 3), (120, 3)])
+lv.question(8, 4, QI_COIN)
+lv.brick_row(9, 10, 4)
+lv.question(11, 4, QI_MUSH)
+lv.brick_row(12, 13, 4)
+lv.hidden(14, 4, QI_LIFE)
+lv.coin_line(15, 18, 4)  # over pit 1
+lv.pipe(24)  # quiet pipe
+lv.coin_line(24, 27, 6)
+lv.brick_row(32, 33, 4)
+lv.coin_arc(35, 4)  # over pit 2
+lv.steps_up(42, 3)  # hill 42..44 rising to 3
+lv.steps_down(45, 3)  # ...and back down 45..47
+lv.question(50, 4, QI_FLOWER)
+lv.brick_row(51, 52, 4)
+lv.hidden(53, 4, QI_LIFE)
+lv.coin_line(57, 60, 4)  # over pit 3
+lv.pipe(64, PIRANHA_FISH)
+lv.brick_row(70, 72, 5)  # bridge
+lv.coin_line(70, 72, 6)  # payout on top of the bridge
+lv.coin_line(75, 79, 4)  # over pit 4
+lv.steps_up(82, 4)  # tower 82..85 rising to 4
+lv.solid_column(86, 4)  # battlement top, then a cliff drop at 87
+lv.hidden(88, 4, QI_LIFE)
+lv.brick_row(89, 90, 4)
+lv.question(91, 4, QI_MUSH)  # clear runway 92..95 before the jump
+lv.coin_arc(95, 3)  # over pit 5
+lv.pipe(105, PIRANHA_FIRE)  # two-pipe corridor
+lv.pipe(110, PIRANHA_FISH)
+lv.coin_line(112, 114, 5)  # clear runway (no overhead blocks) before the jump
+lv.coin_line(119, 122, 4)  # over pit 6
+lv.goomba(21)
+lv.koopa(30)
+lv.goomba(55)
+lv.koopa(68)
+lv.koopa(89)
+lv.koopa(103)
+lv.goomba(124)
+lv.exit(126, 1)
+lv.mario()
+lv.write("Level10.xml")
+
 # ------------------------------------------------------------ LevelManager
 manager = """<?xml version="1.0" encoding="utf-8"?>
 <LevelManager xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -286,8 +335,9 @@ manager = """<?xml version="1.0" encoding="utf-8"?>
     <string>Level7.xml</string>
     <string>Level8.xml</string>
     <string>Level9.xml</string>
+    <string>Level10.xml</string>
   </LevelFilePaths>
 </LevelManager>"""
 with open(os.path.join(OUT, "LevelManager.xml"), "w") as f:
     f.write(manager)
-print("LevelManager.xml: 9 levels")
+print("LevelManager.xml: 10 levels")

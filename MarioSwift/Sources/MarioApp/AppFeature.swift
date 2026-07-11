@@ -63,7 +63,7 @@ struct AppFeature {
         return .none
 
       case .editorTapped:
-        state.editor = EditorFeature.State()
+        state.editor = EditorFeature.State(levelNames: state.levelNames)
         return .none
 
       case .game(.presented(.delegate(.backToMenu))):
