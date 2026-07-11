@@ -2,6 +2,14 @@
 
 Welcome to **Mario Objects**! This is a Mario-inspired game and level editor that I created during my college days. It started as a small project to learn C# but grew into something much bigger as I added features and expanded my skills.
 
+> **🚀 2026 update — native macOS rewrite in Swift!**
+> The game and the level editor have been rewritten for macOS with Swift 6,
+> SwiftUI, and the Composable Architecture, reusing the original sprites,
+> sounds, levels, and physics. See [`MarioSwift/`](MarioSwift/) —
+> `cd MarioSwift && swift run MarioApp`. The rewrite plan and progress live
+> in [`REWRITE_PLAN.md`](REWRITE_PLAN.md). The original C# projects below are
+> kept unchanged as reference.
+
 ---
 
 ## 🖼️ Screenshots

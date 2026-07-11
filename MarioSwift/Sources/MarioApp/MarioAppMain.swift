@@ -1,0 +1,79 @@
+import AppKit
+import ComposableArchitecture
+import SwiftUI
+
+@main
+struct MarioAppMain: App {
+  @MainActor
+  static let store = Store(initialState: AppFeature.State()) {
+    AppFeature()
+  }
+
+  init() {
+    // Headless render check: `swift run MarioApp --screenshot out.png [ticks]`
+    // draws one game frame offscreen and exits. Used to verify the renderer
+    // without a display/interaction.
+    if let flagIndex = CommandLine.arguments.firstIndex(of: "--screenshot"),
+      CommandLine.arguments.count > flagIndex + 1
+    {
+      let path = CommandLine.arguments[flagIndex + 1]
+      let ticks = CommandLine.arguments.count > flagIndex + 2
+        ? Int(CommandLine.arguments[flagIndex + 2]) ?? 0 : 0
+      let level = CommandLine.arguments.count > flagIndex + 3
+        ? CommandLine.arguments[flagIndex + 3] : "lev1.xml"
+      MainActor.assumeIsolated {
+        renderGameScreenshot(to: path, ticks: ticks, level: level)
+      }
+      exit(0)
+    }
+    if let flagIndex = CommandLine.arguments.firstIndex(of: "--menu-screenshot"),
+      CommandLine.arguments.count > flagIndex + 1
+    {
+      let path = CommandLine.arguments[flagIndex + 1]
+      let screen = CommandLine.arguments.count > flagIndex + 2
+        ? CommandLine.arguments[flagIndex + 2] : "main"
+      MainActor.assumeIsolated {
+        renderMenuScreenshot(to: path, screen: screen)
+      }
+      exit(0)
+    }
+    if let flagIndex = CommandLine.arguments.firstIndex(of: "--editor-screenshot"),
+      CommandLine.arguments.count > flagIndex + 1
+    {
+      let path = CommandLine.arguments[flagIndex + 1]
+      MainActor.assumeIsolated {
+        renderEditorScreenshot(to: path)
+      }
+      exit(0)
+    }
+
+    // Running as a bare SwiftPM executable: promote to a regular app so the
+    // window comes to front and receives key events.
+    NSApplication.shared.setActivationPolicy(.regular)
+    NSApplication.shared.activate()
+  }
+
+  var body: some Scene {
+    WindowGroup("Mario") {
+      AppView(store: Self.store)
+        .frame(minWidth: 800, minHeight: 600)
+    }
+  }
+}
+
+struct AppView: View {
+  @Bindable var store: StoreOf<AppFeature>
+
+  var body: some View {
+    Group {
+      if let gameStore = store.scope(state: \.game, action: \.game.presented) {
+        GameView(store: gameStore)
+      } else if let editorStore = store.scope(state: \.editor, action: \.editor.presented) {
+        EditorView(store: editorStore)
+      } else {
+        MenuView(store: store)
+      }
+    }
+    .task { await store.send(.task).finish() }
+  }
+}

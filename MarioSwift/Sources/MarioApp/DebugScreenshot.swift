@@ -1,0 +1,105 @@
+import AppKit
+import ComposableArchitecture
+import MarioKit
+import SwiftUI
+
+/// Renders one frame of a level (after `ticks` ticks of hold-right input) to
+/// a PNG. Debug aid for verifying the renderer headlessly:
+/// `swift run MarioApp --screenshot /tmp/frame.png 40 Level5.xml`
+@MainActor
+func renderGameScreenshot(to path: String, ticks: Int, level: String = "lev1.xml") {
+  do {
+    var session = try GameSession(level: BundledAssets.level(named: level))
+    for tick in 0..<ticks {
+      _ = session.advance(GameInput(right: true, jump: tick % 31 < 8))
+    }
+
+    let renderer = ImageRenderer(
+      content: GameCanvas(session: session).frame(width: 640, height: 480))
+    renderer.scale = 1
+    guard let cgImage = renderer.cgImage else {
+      FileHandle.standardError.write(Data("screenshot: no image rendered\n".utf8))
+      exit(1)
+    }
+    let rep = NSBitmapImageRep(cgImage: cgImage)
+    guard let png = rep.representation(using: .png, properties: [:]) else {
+      FileHandle.standardError.write(Data("screenshot: PNG encode failed\n".utf8))
+      exit(1)
+    }
+    try png.write(to: URL(fileURLWithPath: path))
+    print("screenshot: wrote \(path) at tick \(session.world.tickCount), mario at (\(session.world.mario.x), \(session.world.mario.y))")
+  } catch {
+    FileHandle.standardError.write(Data("screenshot: \(error)\n".utf8))
+    exit(1)
+  }
+}
+
+/// Same idea for the menu: `swift run MarioApp --menu-screenshot /tmp/m.png [screen]`
+/// where screen is main|levels|options|about.
+@MainActor
+func renderMenuScreenshot(to path: String, screen: String) {
+  var state = AppFeature.State()
+  switch screen {
+  case "levels":
+    state.screen = .levelSelect
+    state.$unlockedLevels.withLock { $0 = 2 }
+  case "options": state.screen = .options
+  case "about": state.screen = .about
+  default: state.screen = .main
+  }
+  let store = Store(initialState: state) { AppFeature() }
+
+  let renderer = ImageRenderer(
+    content: MenuView(store: store).frame(width: 800, height: 600))
+  renderer.scale = 1
+  guard let cgImage = renderer.cgImage else {
+    FileHandle.standardError.write(Data("menu screenshot: no image rendered\n".utf8))
+    exit(1)
+  }
+  let rep = NSBitmapImageRep(cgImage: cgImage)
+  guard let png = rep.representation(using: .png, properties: [:]) else {
+    FileHandle.standardError.write(Data("menu screenshot: PNG encode failed\n".utf8))
+    exit(1)
+  }
+  do {
+    try png.write(to: URL(fileURLWithPath: path))
+    print("menu screenshot: wrote \(path) (\(screen))")
+  } catch {
+    FileHandle.standardError.write(Data("menu screenshot: \(error)\n".utf8))
+    exit(1)
+  }
+}
+
+/// Same idea for the editor: `swift run MarioApp --editor-screenshot /tmp/e.png`
+/// renders the editor UI over lev1.
+@MainActor
+func renderEditorScreenshot(to path: String) {
+  do {
+    var state = EditorFeature.State()
+    state.document = try BundledAssets.level(named: "lev1.xml")
+    state.tool = .place(.blockQuestion)
+    state.zoom = 1
+    state.hoverCell = .init(x: 10, y: 5)
+    let store = Store(initialState: state) { EditorFeature() }
+
+    // HSplitView (AppKit-backed) can't be rendered offscreen; the canvas is
+    // the custom part worth checking.
+    let renderer = ImageRenderer(
+      content: EditorCanvas(store: store))
+    renderer.scale = 1
+    guard let cgImage = renderer.cgImage else {
+      FileHandle.standardError.write(Data("editor screenshot: no image rendered\n".utf8))
+      exit(1)
+    }
+    let rep = NSBitmapImageRep(cgImage: cgImage)
+    guard let png = rep.representation(using: .png, properties: [:]) else {
+      FileHandle.standardError.write(Data("editor screenshot: PNG encode failed\n".utf8))
+      exit(1)
+    }
+    try png.write(to: URL(fileURLWithPath: path))
+    print("editor screenshot: wrote \(path)")
+  } catch {
+    FileHandle.standardError.write(Data("editor screenshot: \(error)\n".utf8))
+    exit(1)
+  }
+}
