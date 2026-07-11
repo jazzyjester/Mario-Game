@@ -6,9 +6,9 @@ Welcome to **Mario Objects**! This is a Mario-inspired game and level editor tha
 > The game and the level editor have been rewritten for macOS with Swift 6,
 > SwiftUI, and the Composable Architecture, reusing the original sprites,
 > sounds, levels, and physics. See [`MarioSwift/`](MarioSwift/) —
-> `cd MarioSwift && swift run MarioApp`. The rewrite plan and progress live
-> in [`REWRITE_PLAN.md`](REWRITE_PLAN.md). The original C# projects below are
-> kept unchanged as reference.
+> `cd MarioSwift && swift run MarioApp`. Jump to [Swift Rewrite (2026)](#-swift-rewrite-2026)
+> below for what's included, or [`REWRITE_PLAN.md`](REWRITE_PLAN.md) for the
+> phased build log. The original C# projects below are kept unchanged as reference.
 
 ---
 
@@ -41,6 +41,33 @@ This solution was built in Visual Studio 2010 and contains the following project
 - **MarioLevel Editor** - A level editor to design custom levels.
 - **Mario Rectangle** - A simple test project.
 - **Mario Test** - A unit test project for basic functionality.
+
+---
+
+## 🕹️ Swift Rewrite (2026)
+
+[`MarioSwift/`](MarioSwift/) is a from-scratch native macOS port of both the
+game and the level editor, built with Swift 6, SwiftUI, and the Composable
+Architecture — reusing the original sprites, sounds, level XML files, and
+physics constants. Full details in [`MarioSwift/README.md`](MarioSwift/README.md);
+the phased build log is in [`REWRITE_PLAN.md`](REWRITE_PLAN.md).
+
+- **Engine (`MarioKit`)** — deterministic 20Hz simulation ported object-for-object
+  from the C# original, plus a legacy-compatible level XML codec. One deliberate
+  behavior change: the old wall-climb bug is fixed.
+- **Playable app** — title screen, level select with progress locks, 8 levels
+  (the original 3 plus 5 new with a difficulty ramp), classic death sequence,
+  sound/music options, about screen.
+- **Level editor** — palette + drag-paint, undo/redo, params inspector,
+  eyedropper, open/save round-trips the legacy XML format, "Play Level" jumps
+  straight into the game and back.
+- **51 tests** across 11 suites, including a geometry runner-bot that proves
+  every shipped level is completable.
+
+```sh
+cd MarioSwift
+swift run MarioApp
+```
 
 ---
 
