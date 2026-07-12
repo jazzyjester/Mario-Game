@@ -179,16 +179,26 @@ struct GameCanvas: View {
     let screen = world.screen
     var commands: [(Image, CGRect)] = []
 
-    // Parallax background: the legacy pipeline composed two offsets — the
-    // 1/3-speed scroll and the background/output screen delta. Drawn as the
+    // Parallax background: scrolls at 1/3 the camera's own speed, clamped
+    // independently against the background sheet's bounds. Drawn as the
     // whole sheet shifted behind the clip (a per-scroll-position crop would
     // grow the sprite cache without bound).
+    //
+    // This used to be derived from the delta between two separately-clamped
+    // camera trackers (a 320×240 "output" viewport and a legacy 400×304
+    // "background" viewport, both centering on Mario independently). Away
+    // from the level edges the two trackers moved in lockstep and the delta
+    // was a harmless constant, but each clamped against the level bounds at
+    // a different point (they have different widths/heights), so in the
+    // band between those two clamp points the delta briefly spiked instead
+    // of staying constant — a visible scroll-speed glitch right around
+    // spawn, since Mario starts a few pixels inside that band. Scrolling
+    // directly off the single real camera avoids the glitch entirely.
     let bgSheet = SpriteSheet.background
     let bgSource = clamped(
       IRect(
-        x: (screen.output.x - screen.background.x) + screen.output.x / 3,
-        y: (GameWorld.levelHeight - Int(viewHeight))
-          - (screen.output.y - screen.background.y) - screen.output.y / 3,
+        x: screen.x / 3,
+        y: (GameWorld.levelHeight - Int(viewHeight)) - screen.y / 3,
         width: Int(viewWidth),
         height: Int(viewHeight)
       ), to: bgSheet)
@@ -205,7 +215,7 @@ struct GameCanvas: View {
     }
 
     // Entities: culled against the camera viewport inside the engine.
-    let cameraX = screen.output.x
+    let cameraX = screen.x
     let cameraY = screen.viewTopY
     let viewport = IRect(x: cameraX, y: cameraY, width: Int(viewWidth), height: Int(viewHeight))
     for renderable in world.renderables(visibleIn: viewport) {

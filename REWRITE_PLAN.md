@@ -40,11 +40,28 @@ check items off, add session notes at the bottom, and commit.**
   `v0 = -38` (stomp bounce `-20`), `t += 0.35` per tick; falling: `y += 6 + t` per tick.
   Run: `x ± (3 + XAdd)` per tick, `XAdd += 0.5` capped at 3; stop: sliding `x ± √XCount` decay from 5.
   Monsters walk 1px per tick, reverse on side collisions, fall at 2px/tick.
+- Swift rewrite deviation (physics): a *held* jump still plays out this exact parabola/fall
+  bit-for-bit — the generated levels' pit widths and wall heights are tuned against this precise
+  arc, so it's kept byte-identical rather than "improved" wholesale. Layered on top, as pure
+  additions that never change a held jump's shape: variable jump height (releasing early cuts the
+  rise short and switches straight to the fall step — the legacy engine always played the full
+  arc regardless of input), coyote time (~5 ticks of post-ledge jump grace; the legacy engine
+  disabled jumping the instant a ledge was left), jump buffering (~5 ticks, a press shortly before
+  landing fires on touchdown), and a terminal-velocity cap (11px/tick) on the otherwise-unbounded
+  `6 + t` fall step for long falls. See `Mario.swift`'s `Physics` enum and `onJumpTick`/`startJump`.
 - Collision: AABB overlap, direction classified per corner-containment with W/H comparison
   (see `Level.Intersects` in `MarioObjects/Objects/BaseObjects/Level.cs`) — port it faithfully;
   gameplay (wall stops, landing, head-bump on question/brick) depends on its quirks.
 - Camera: follows Mario, clamped at level edges (level 1024×464 px, viewport ~800×464);
   parallax background scrolls at 1/3 speed.
+- Swift rewrite deviation (parallax): the legacy pipeline derived the background scroll from the
+  delta between two independently-clamped camera trackers (a 320×240 "output" viewport and a
+  400×304 "background" viewport). Away from level edges the two moved in lockstep and the delta
+  was a harmless constant, but they clamped against the level bounds at different points (being
+  different sizes), so in the band between those two clamp points — which sits right around
+  spawn — the delta spiked instead of staying constant, a visible scroll-speed glitch. The Swift
+  version drops the second tracker and scrolls the background directly off the one real camera
+  (`screen.x / 3`, `screen.y / 3`, clamped to the background sheet's own bounds).
 - Levels: `MarioObjects/bin/Debug/lev1.xml`, `Level2.xml`, `Level3.xml` (+ `LevelManager.xml` = level list,
   lives carried across levels, start lives = 3).
 - Sounds: jump, coin, stomp, mush, brick, block, fireball (wav) + level1/level2 music (mp3).

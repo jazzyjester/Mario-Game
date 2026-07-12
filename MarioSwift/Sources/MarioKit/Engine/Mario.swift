@@ -4,6 +4,26 @@ import Foundation
 /// (top-left, level coordinates) — a legacy quirk preserved because all the
 /// physics constants are tuned to it.
 public final class Mario: AnimatedEntity {
+  /// Vertical physics tuning. The rise is the exact legacy parabola
+  /// (`pos = start + v0·t + 4.9·t²`, `t += 0.35`/tick) and the fall is the
+  /// exact legacy step (`y += 6 + Int(t)`) — kept bit-for-bit so a *held*
+  /// jump reproduces the original arc, which the shipped/generated levels'
+  /// geometry (pit widths, wall heights) is tuned against. Variable jump
+  /// height, coyote time, and jump buffering are added as pure extensions
+  /// that only change *when* a jump starts or how early it's cut off, never
+  /// the shape of a held jump's arc.
+  enum Physics {
+    static let jumpVelocity = -38.0
+    static let gravity = 4.9
+    static let tickTime = 0.35
+    static let fallBase = 6
+    static let terminalFallStep = 11
+    static let bounceVelocity = -20.0
+    static let deathHopVelocity = -20.0
+    static let coyoteTicksMax = 5
+    static let jumpBufferTicksMax = 5
+  }
+
   public enum JumpState: Equatable, Sendable { case none, up, down }
   public enum MoveState: Equatable, Sendable { case none, right, left, stopping }
   public enum PowerUp: Equatable, Sendable { case small, big, fire }
@@ -25,6 +45,13 @@ public final class Mario: AnimatedEntity {
   var currentPosition: Double = 0
   var oldPosition: Double = 0
   var timeCount: Double = 0
+  // Ticks of post-ledge jump grace remaining (coyote time), and ticks a
+  // jump press stays buffered while airborne, waiting for landing.
+  var coyoteTicks = 0
+  var jumpBufferTicks = 0
+  // Guards the landing transition against firing more than once per tick
+  // (Mario usually overlaps two adjacent ground tiles at once).
+  var landedThisTick = false
 
   // Horizontal run acceleration / stop slide.
   var xCount: Double = 0
@@ -113,12 +140,12 @@ public final class Mario: AnimatedEntity {
     jumpState = .up
     timeCount = 0
     startPosition = Double(y)
-    startVelocity = -20
+    startVelocity = Physics.deathHopVelocity
   }
 
   func deathFallTick() {
-    timeCount += 350.0 / 1000.0
-    y = Int(startPosition + startVelocity * timeCount + 4.9 * timeCount * timeCount)
+    timeCount += Physics.tickTime
+    y = Int(startPosition + startVelocity * timeCount + Physics.gravity * timeCount * timeCount)
   }
 
   func setProperties() {
@@ -144,6 +171,11 @@ public final class Mario: AnimatedEntity {
   // MARK: Input actions
 
   func move(_ state: MoveState) {
+    // Reversing direction mid-run restarts the accel ramp from a stand
+    // instead of instantly flipping to top speed the other way.
+    if moving, moveState == .left || moveState == .right, moveState != state {
+      xAdd = 0
+    }
     moveState = state
     if state == .left { facing = .left }
     if state == .right { facing = .right }
@@ -163,19 +195,34 @@ public final class Mario: AnimatedEntity {
     }
   }
 
-  func startJump(kill: Bool, defaultVelocity: Double, world: GameWorld) {
+  /// Starts a jump. Grounded (or within coyote grace) presses fire
+  /// immediately; airborne presses are buffered so they fire the instant
+  /// Mario lands. `kill` (enemy-stomp bounce) always fires immediately,
+  /// ignoring ground state.
+  func startJump(kill: Bool, velocityOverride: Double? = nil, world: GameWorld) {
     if !kill {
       upPressed = true
+      guard jumpState == .none || coyoteTicks > 0 else {
+        jumpBufferTicks = Physics.jumpBufferTicksMax
+        return
+      }
     }
-    if jumpState == .none || kill {
-      world.play(.jump)
-      jumpState = .up
-      startPosition = Double(y)
-      oldPosition = Double(y)
-      currentPosition = Double(y)
-      timeCount = 0
-      startVelocity = defaultVelocity != 0 ? defaultVelocity : -38
-    }
+    world.play(.jump)
+    jumpState = .up
+    startPosition = Double(y)
+    oldPosition = Double(y)
+    currentPosition = Double(y)
+    timeCount = 0
+    startVelocity = velocityOverride ?? Physics.jumpVelocity
+    coyoteTicks = 0
+    jumpBufferTicks = 0
+  }
+
+  /// Jump button released: cuts a still-rising jump short (variable jump
+  /// height — a tap gives a short hop, a held press gives the full arc).
+  /// The cut itself happens in `onJumpTick`, which checks `upPressed`.
+  func endJump() {
+    upPressed = false
   }
 
   func fireBall(_ world: GameWorld) {
@@ -254,6 +301,7 @@ public final class Mario: AnimatedEntity {
       startPosition = Double(y)
       timeCount = 0
       startVelocity = 0
+      coyoteTicks = Physics.coyoteTicksMax
     }
   }
 
@@ -299,14 +347,14 @@ public final class Mario: AnimatedEntity {
     case .goomba:
       let goomba = g as! MonsterGoomba
       if c.dir == .up && !goomba.isFallDying {
-        startJump(kill: true, defaultVelocity: upPressed ? 0 : -20, world: world)
+        startJump(kill: true, velocityOverride: Physics.bounceVelocity, world: world)
         goomba.die()
         world.play(.stomp)
       }
 
     case .piranha:
       if c.dir == .up {
-        startJump(kill: true, defaultVelocity: upPressed ? 0 : -20, world: world)
+        startJump(kill: true, velocityOverride: Physics.bounceVelocity, world: world)
         (g as! MonsterPiranha).die(world)
         world.play(.stomp)
       }
@@ -316,13 +364,13 @@ public final class Mario: AnimatedEntity {
       if c.dir == .up {
         switch koopa.state {
         case .walking:
-          startJump(kill: true, defaultVelocity: upPressed ? 0 : -20, world: world)
+          startJump(kill: true, velocityOverride: Physics.bounceVelocity, world: world)
           koopa.setState(.shield)
           world.play(.stomp)
         case .shield where koopa.returningTime >= 3:
           koopa.setState(.shieldMoving)
         case .shieldMoving:
-          startJump(kill: true, defaultVelocity: upPressed ? 0 : -20, world: world)
+          startJump(kill: true, velocityOverride: Physics.bounceVelocity, world: world)
           koopa.setState(.shield)
         default:
           break
@@ -339,10 +387,16 @@ public final class Mario: AnimatedEntity {
         } else if jumpState != .none {
           y = g.newy - height
         }
-        if jumpState != .none {
+        if jumpState != .none && !landedThisTick {
+          landedThisTick = true
           jumpState = .none
+          coyoteTicks = 0
+          setDirections()
+          // A jump pressed while still airborne fires the instant Mario lands.
+          if jumpBufferTicks > 0 {
+            startJump(kill: false, world: world)
+          }
         }
-        setDirections()
       }
 
       if c.dir == .left {
@@ -403,28 +457,33 @@ public final class Mario: AnimatedEntity {
   }
 
   func onJumpTick(_ world: GameWorld) {
+    // Mario usually straddles two adjacent ground tiles, so a landing this
+    // tick fires the `.up` collision callback once per tile touched; this
+    // keeps the state transition (and the buffered-jump refire) to once.
+    landedThisTick = false
     if jumpState != .none {
       setDirections()
-      timeCount += 350.0 / 1000.0
-      oldPosition = currentPosition
-      currentPosition = startPosition + startVelocity * timeCount + 4.9 * timeCount * timeCount
+      timeCount += Physics.tickTime
       let previousY = y
       if jumpState == .up {
+        oldPosition = currentPosition
+        currentPosition = startPosition + startVelocity * timeCount + Physics.gravity * timeCount * timeCount
         y = Int(currentPosition)
+        // Apex reached, or jump released early (variable jump height): stop
+        // rising and switch to the fall step from here.
+        if currentPosition > oldPosition || !upPressed {
+          jumpState = .down
+          timeCount = 0
+        }
       } else {
-        y += 6 + Int(timeCount)
+        y += min(Physics.fallBase + Int(timeCount), Physics.terminalFallStep)
       }
       resolveVerticalOverlap(movedBy: y - previousY, world: world)
 
       world.updateScreensY()
-
-      if jumpState == .up && currentPosition > oldPosition {
-        jumpState = .down
-        timeCount = 0
-      }
-    } else {
-      timeCount = 0
     }
+    if coyoteTicks > 0 { coyoteTicks -= 1 }
+    if jumpBufferTicks > 0 { jumpBufferTicks -= 1 }
   }
 
   func onMoveTick(_ world: GameWorld) {

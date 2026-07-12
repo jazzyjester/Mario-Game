@@ -67,6 +67,31 @@ struct GameWorldBasicsTests {
     #expect(world.finished)
   }
 
+  @Test func fallSpeedIsClampedAfterALongFall() throws {
+    // The legacy fall step (6 + Int(t)) grows without bound; a long enough
+    // fall should hit the new terminal-velocity cap instead of growing
+    // forever. (Mario always spawns on the bottom row regardless of level
+    // layout, so lift him to the top of the level directly to get enough
+    // fall distance before he hits the death threshold.)
+    let level = LevelDocument(objects: [
+      LevelObject(kind: .mario, x: 1, y: 1),
+      LevelObject(kind: .blockSolid, x: 60, y: 0),
+    ])
+    let world = try GameWorld(level: level)
+    world.mario.y = 0
+
+    var lastY = world.mario.y
+    var maxStep = 0
+    var ticks = 0
+    while !world.marioDying && ticks < 200 {
+      world.advance(GameInput())
+      maxStep = max(maxStep, world.mario.y - lastY)
+      lastY = world.mario.y
+      ticks += 1
+    }
+    #expect(maxStep == Mario.Physics.terminalFallStep)
+  }
+
   @Test func deathPlaysLeapAnimationBeforeFinishing() throws {
     // Kill Mario with a goomba right next to the spawn.
     let world = try makeWorld(extra: [LevelObject(kind: .monsterGoomba, x: 3, y: 1)])
@@ -154,7 +179,7 @@ struct MarioMovementTests {
     // Mario climb it — a sideways step into a block just below its top edge
     // was classified as "landed on top", teleporting him up the wall face.
     // Wall column at grid x=6 (left edge 96px), 8 tiles high (top at 320px)
-    // — unclearable, the jump apex leaves Mario's bottom at ~375px.
+    // — unclearable, well beyond a single jump's apex.
     let wall = (1...8).map { LevelObject(kind: .blockBrick, x: 6, y: $0) }
     let world = try makeWorld(ground: .blockGrass, extra: wall)
 
@@ -178,16 +203,87 @@ struct MarioMovementTests {
     #expect(world.mario.jumpState == .up)
     #expect(world.mario.y < groundY)
 
+    // Hold jump through the full ascent (variable jump height means
+    // releasing early cuts it short — see shortHopWhenJumpReleasedEarly).
     var minY = groundY
+    for _ in 0..<40 {
+      guard world.mario.jumpState == .up else { break }
+      world.advance(GameInput(jump: true))
+      minY = min(minY, world.mario.y)
+    }
     for _ in 0..<60 {
       world.advance(GameInput())
       minY = min(minY, world.mario.y)
     }
-    // Rose a meaningful amount (apex of the -38 parabola ≈ 73px up), then
-    // landed back exactly on the ground.
+    // Rose a meaningful amount, then landed back exactly on the ground.
     #expect(groundY - minY > 60)
     #expect(world.mario.y == groundY)
     #expect(world.mario.jumpState == .none)
+  }
+
+  @Test func shortHopWhenJumpReleasedEarly() throws {
+    // Tap jump for a single tick: variable jump height should cut the
+    // ascent short compared to holding it through the full arc.
+    let tapped = try makeWorld()
+    let groundY = tapped.mario.y
+    tapped.advance(GameInput(jump: true))
+    var tappedMinY = groundY
+    for _ in 0..<60 {
+      tapped.advance(GameInput())
+      tappedMinY = min(tappedMinY, tapped.mario.y)
+    }
+
+    let held = try makeWorld()
+    held.advance(GameInput(jump: true))
+    var heldMinY = groundY
+    for _ in 0..<40 {
+      guard held.mario.jumpState == .up else { break }
+      held.advance(GameInput(jump: true))
+      heldMinY = min(heldMinY, held.mario.y)
+    }
+    for _ in 0..<60 {
+      held.advance(GameInput())
+      heldMinY = min(heldMinY, held.mario.y)
+    }
+
+    #expect(groundY - tappedMinY < groundY - heldMinY)
+  }
+
+  @Test func coyoteTimeAllowsJumpJustAfterLeavingGround() throws {
+    let world = try makeWorld(groundWidth: 4)  // ground ends a few tiles past spawn
+    var steppedOff = false
+    for _ in 0..<30 {
+      world.advance(GameInput(right: true))
+      if world.mario.jumpState == .down {
+        steppedOff = true
+        break
+      }
+    }
+    #expect(steppedOff)
+    let yBeforeJump = world.mario.y
+
+    world.advance(GameInput(jump: true))
+    #expect(world.mario.jumpState == .up)
+    #expect(world.mario.y < yBeforeJump)
+  }
+
+  @Test func jumpBufferedShortlyBeforeLanding() throws {
+    let world = try makeWorld()
+    // Put Mario a short hop above the ground, already falling.
+    world.mario.jumpState = .down
+    world.mario.timeCount = 0
+    world.mario.y -= 20
+
+    world.advance(GameInput(jump: true))  // pressed while still airborne
+    #expect(world.mario.jumpState == .down)  // buffered, not immediate
+
+    var jumped = false
+    for _ in 0..<20 {
+      world.advance(GameInput())
+      if world.mario.jumpState == .up { jumped = true; break }
+      if world.mario.jumpState == .none { break }  // landed without the buffer firing
+    }
+    #expect(jumped)
   }
 }
 
@@ -213,6 +309,11 @@ struct ItemsAndBlocksTests {
 
     world.advance(GameInput(jump: true))
     var events: [GameEvent] = []
+    for _ in 0..<12 {
+      guard world.mario.jumpState == .up else { break }
+      world.advance(GameInput(jump: true))
+      events += world.drainEvents()
+    }
     for _ in 0..<20 {
       world.advance(GameInput())
       events += world.drainEvents()
@@ -233,6 +334,10 @@ struct ItemsAndBlocksTests {
     let mush = world.objects.compactMap { $0 as? MushRed }.first!
 
     world.advance(GameInput(jump: true))
+    for _ in 0..<12 {
+      guard world.mario.jumpState == .up else { break }
+      world.advance(GameInput(jump: true))
+    }
     for _ in 0..<30 {
       world.advance(GameInput())
     }
@@ -256,6 +361,11 @@ struct ItemsAndBlocksTests {
     // Small Mario: head bump plays the block sound, brick survives.
     world.advance(GameInput(jump: true))
     var events: [GameEvent] = []
+    for _ in 0..<12 {
+      guard world.mario.jumpState == .up else { break }
+      world.advance(GameInput(jump: true))
+      events += world.drainEvents()
+    }
     for _ in 0..<30 {
       world.advance(GameInput())
       events += world.drainEvents()
@@ -268,6 +378,11 @@ struct ItemsAndBlocksTests {
     world.mario.setProperties()
     world.advance(GameInput(jump: true))
     events = []
+    for _ in 0..<12 {
+      guard world.mario.jumpState == .up else { break }
+      world.advance(GameInput(jump: true))
+      events += world.drainEvents()
+    }
     var sawFlyingPiece = false
     for _ in 0..<30 {
       world.advance(GameInput())
@@ -354,7 +469,10 @@ struct MonsterTests {
       world.advance(GameInput())
       events += world.drainEvents()
     }
-    #expect(koopa.state == .shield || koopa.state == .returning)
+    // The much smaller stomp bounce (real Mario physics vs. the legacy -20)
+    // brings Mario back down onto the shell sooner, so within this window it
+    // may already have been kicked into .shieldMoving by a second stomp.
+    #expect(koopa.state == .shield || koopa.state == .returning || koopa.state == .shieldMoving)
     #expect(events.contains(.play(.stomp)))
   }
 
@@ -408,13 +526,23 @@ struct LevelGeometryTests {
 
     let world = try GameWorld(level: document)
     var completed = false
+    var trace: [String] = []
     for _ in 0..<12000 {  // Level10 is twice the width of the others
-      world.advance(GameInput(right: true, jump: shouldJump(world)))
+      let jump = shouldJump(world)
+      world.advance(GameInput(right: true, jump: jump))
+      if !world.marioDying {
+        trace.append("x=\(world.mario.x) y=\(world.mario.y) jumpState=\(world.mario.jumpState) jump=\(jump)")
+        if trace.count > 60 { trace.removeFirst() }
+      }
       if world.drainEvents().contains(.levelCompleted) {
         completed = true
         break
       }
       if world.finished { break }  // fell into a pit: geometry failed
+    }
+    if !completed, name == "Level7.xml" {
+      print("=== \(name) trace ===")
+      trace.forEach { print($0) }
     }
     #expect(
       completed,
@@ -422,9 +550,13 @@ struct LevelGeometryTests {
   }
 
   /// A competent runner: jump when a wall blocks the path or a pit opens
-  /// just ahead, otherwise keep feet on the ground.
+  /// just ahead, otherwise keep feet on the ground. Once a jump is under
+  /// way, keeps holding until Mario lands — releasing mid-ascent would cut
+  /// the jump short (variable jump height) right as he needs the height to
+  /// clear what triggered it.
   private func shouldJump(_ world: GameWorld) -> Bool {
     let mario = world.mario!
+    if mario.jumpState == .up { return true }
     let rect = mario.rect
     let walls: Set<EntityKind> = [
       .grass, .solidBlock, .ground1, .brick, .pipeUp, .blockQuestion, .movingBlock,

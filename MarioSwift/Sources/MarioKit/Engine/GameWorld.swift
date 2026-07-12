@@ -41,24 +41,17 @@ public struct GameInput: Equatable, Sendable {
   }
 }
 
-/// The camera state: a faithful port of the legacy `Screen`'s two nested
-/// viewports. `x` counts from the level's left edge; `y` counts *up from the
-/// level's bottom edge*. The output screen (320×240) is what the player sees;
-/// the background screen (400×304) was the legacy draw surface and still
-/// drives a few gameplay-adjacent calculations.
-public struct SubScreen: Equatable, Sendable {
+/// The camera: a 320×240 viewport that follows Mario, clamped to the level
+/// bounds. `x` counts from the level's left edge; `y` counts *up from the
+/// level's bottom edge*.
+public struct ScreenState: Equatable, Sendable {
   public var x = 0
   public var y = 0
-  public let width: Int
-  public let height: Int
-}
-
-public struct ScreenState: Equatable, Sendable {
-  public var background = SubScreen(width: 400, height: 304)
-  public var output = SubScreen(width: 320, height: 240)
+  public let width = 320
+  public let height = 240
 
   /// Top edge of the visible viewport in level pixel coordinates.
-  public var viewTopY: Int { GameWorld.levelHeight - output.height - output.y }
+  public var viewTopY: Int { GameWorld.levelHeight - height - y }
 }
 
 /// The deterministic game simulation: builds entities from a `LevelDocument`
@@ -203,11 +196,16 @@ public final class GameWorld {
 
   private func apply(_ input: GameInput) {
     // The legacy form translated (auto-repeating) key events; holding a key
-    // is equivalent to re-sending its action every tick.
+    // is equivalent to re-sending its action every tick. Jump is the
+    // exception: it's edge-triggered so the jump buffer only arms once per
+    // press, not continuously while held (which would let a buffered press
+    // held past release still auto-fire on a later landing).
     if input.jump {
-      mario.startJump(kill: false, defaultVelocity: 0, world: self)
+      if !previousInput.jump {
+        mario.startJump(kill: false, world: self)
+      }
     } else if previousInput.jump {
-      mario.upPressed = false
+      mario.endJump()
     }
 
     if input.right {
@@ -260,41 +258,25 @@ public final class GameWorld {
   // MARK: Camera (legacy Level.Update_ScreensX/Y)
 
   func updateScreensX() {
-    if mario.x >= screen.background.width / 2 {
-      screen.background.x = mario.x - screen.background.width / 2
+    if mario.x >= screen.width / 2 {
+      screen.x = mario.x - screen.width / 2
     } else {
-      screen.background.x = 0
+      screen.x = 0
     }
-    if mario.x >= screen.output.width / 2 {
-      screen.output.x = mario.x - screen.output.width / 2
-    } else {
-      screen.output.x = 0
-    }
-    if mario.x + screen.background.width / 2 >= Self.levelWidth {
-      screen.background.x = Self.levelWidth - screen.background.width
-    }
-    if mario.x + screen.output.width / 2 >= Self.levelWidth {
-      screen.output.x = Self.levelWidth - screen.output.width
+    if mario.x + screen.width / 2 >= Self.levelWidth {
+      screen.x = Self.levelWidth - screen.width
     }
   }
 
   func updateScreensY() {
     let height = Self.levelHeight
-    if height - mario.y >= screen.background.height / 2 {
-      screen.background.y = height - mario.y - screen.background.height / 2
+    if height - mario.y >= screen.height / 2 {
+      screen.y = height - mario.y - screen.height / 2
     } else {
-      screen.background.y = 0
+      screen.y = 0
     }
-    if height - mario.y >= screen.output.height / 2 {
-      screen.output.y = height - mario.y - screen.output.height / 2
-    } else {
-      screen.output.y = 0
-    }
-    if height - mario.y + screen.background.height / 2 >= height {
-      screen.background.y = height - screen.background.height
-    }
-    if height - mario.y + screen.output.height / 2 >= height {
-      screen.output.y = height - screen.output.height
+    if height - mario.y + screen.height / 2 >= height {
+      screen.y = height - screen.height
     }
   }
 
